@@ -1,0 +1,687 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="자동차와 이동 방법에 대한 수업 과제 설문">
+  <meta name="theme-color" content="#efedf6">
+  <title>자동차와 이동 방법에 대한 생각 조사 | 리프레임</title>
+  <style>
+:root {
+  color-scheme: light;
+  --ink: #211c34;
+  --muted: #59536a;
+  --accent: #5632ab;
+  --accent-dark: #452789;
+  --wash: #efedf6;
+  --soft: #f7f5fc;
+  --line: #e4deef;
+  --white: #fff;
+  font: 16px/1.58 Inter, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; color: var(--ink); background: var(--wash); }
+.shell { width: min(calc(100% - 40px), 960px); margin: 36px auto 44px; }
+.masthead { display: flex; align-items: center; gap: 11px; margin: 0 0 24px 4px; font-weight: 800; }
+.masthead small { color: var(--muted); margin-left: 5px; font-size: .81rem; font-weight: 500; }
+.brand-mark { display: grid; place-items: center; width: 38px; height: 38px; color: white; background: var(--accent); border-radius: 13px; }
+.panel { background: var(--white); padding: clamp(24px, 5vw, 54px); border-radius: 28px; box-shadow: 0 16px 60px #2c14530d; }
+p { margin: 0 0 12px; }
+.eyebrow, .progress { color: var(--accent); font-size: .875rem; font-weight: 800; }
+h1, h2, legend { line-height: 1.28; letter-spacing: -.025em; }
+h1 { margin: 0 0 13px; font-size: clamp(2rem, 5vw, 3.3rem); text-wrap: balance; }
+#welcome h1 { max-width: 16ch; }
+h2 { margin: 0 0 9px; font-size: 1.22rem; }
+.lead { color: var(--muted); font-size: 1.05rem; margin-bottom: 24px; }
+.intro { color: var(--muted); max-width: 55ch; margin: 24px 0; }
+.summary { display: flex; gap: 12px 28px; flex-wrap: wrap; margin: 24px 0 0; padding: 12px 16px 12px 34px; background: var(--soft); border-radius: 12px; }
+.consent, .choice { display: flex; align-items: center; gap: 10px; min-height: 46px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 11px; }
+.consent { max-width: 53ch; }
+input[type=checkbox], input[type=radio] { accent-color: var(--accent); width: 18px; height: 18px; flex: none; margin: 0; }
+.choice:has(input:checked), .consent:has(input:checked) { border-color: var(--accent); background: var(--soft); }
+.progress { display: flex; align-items: center; gap: 16px; margin-bottom: 22px; }
+progress { appearance: none; border: 0; width: 100%; height: 7px; border-radius: 10px; background: var(--line); }
+progress::-webkit-progress-bar { background: var(--line); border-radius: 10px; }
+progress::-webkit-progress-value { background: var(--accent); border-radius: 10px; }
+progress::-moz-progress-bar { background: var(--accent); border-radius: 10px; }
+#step-label { flex: none; }
+.block { margin: 25px 0 0; border: 0; padding: 23px 0 0; border-top: 1px solid var(--line); min-width: 0; }
+fieldset.block { padding-top: 10px; }
+legend { font-size: 1.1rem; font-weight: 800; padding: 0 9px 0 0; }
+.hint, .description { color: var(--muted); font-size: .9rem; }
+.hint { margin: 0 0 12px; }
+.choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.subfield { margin-top: 12px; display: grid; gap: 5px; }
+.pick-list { display: grid; gap: 9px; }
+.pick-row { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: center; gap: 8px 14px; border-bottom: 1px solid var(--line); padding-bottom: 9px; }
+label strong, .description { display: block; }
+select, input[type=text], textarea { width: 100%; min-width: 0; min-height: 45px; font: inherit; color: var(--ink); background: var(--white); border: 1px solid #aca3bd; border-radius: 9px; padding: 8px 10px; }
+select { cursor: pointer; }
+.has-value { background: var(--soft); border-color: var(--accent); font-weight: 700; color: var(--accent-dark); }
+select:disabled, .matrix-cell input:disabled { background: #eeeaf2; color: #645d73; cursor: default; }
+textarea { min-height: 120px; resize: vertical; }
+.rank { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.rank label { display: grid; gap: 5px; }
+details { margin-top: 12px; background: var(--soft); padding: 10px 13px; border-radius: 9px; }
+summary { cursor: pointer; color: var(--accent-dark); font-weight: 700; }
+details li { margin-bottom: 6px; }
+.matrix { display: grid; gap: 0; margin-top: 12px; }
+.matrix-row { display: grid; grid-template-columns: minmax(154px, 2.8fr) repeat(5,minmax(64px, 1fr)); align-items: center; column-gap: 7px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+.matrix-head { font-size: .81rem; font-weight: 800; color: var(--accent-dark); text-align: center; background: var(--white); position: sticky; top: 0; z-index: 2; }
+.matrix-head span:first-child { text-align: left; }
+.matrix-cell { display: grid; gap: 3px; min-width: 0; }
+.matrix-cell span { display: none; }
+.matrix-cell :is(select, input) { text-align: center; padding: 6px 1px; }
+.matrix-cell input:invalid { border-color: #9b2442; }
+.scale { display: flex; flex-wrap: wrap; gap: 4px 13px; padding: 10px 12px; border-radius: 10px; background: var(--soft); font-size: .84rem; }
+.scale strong { color: var(--accent-dark); }
+.actions { display: flex; justify-content: space-between; gap: 10px; margin-top: 26px; }
+.actions.start { justify-content: flex-end; }
+button { min-height: 46px; padding: 10px 17px; border: 1px solid transparent; font: inherit; font-weight: 800; border-radius: 10px; cursor: pointer; }
+button:disabled { opacity: .65; cursor: wait; }
+.primary { background: var(--accent); color: white; }
+.primary:hover { background: var(--accent-dark); }
+.secondary { color: var(--accent-dark); background: white; border-color: var(--line); }
+.secondary:hover { background: var(--soft); }
+:focus-visible { outline: 3px solid #8654e4; outline-offset: 3px; }
+.error { color: #9b2442; margin: 15px 0 0; font-weight: 700; }
+footer { color: var(--muted); padding: 18px 4px; text-align: center; font-size: .83rem; }
+@media (max-width: 680px) {
+  .shell { width: calc(100% - 20px); margin-top: 17px; }
+  .masthead { margin-bottom: 15px; }
+  .panel { padding: 23px 15px; border-radius: 19px; }
+  .matrix-row { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; padding: 12px 0; }
+  .matrix-head { display: none; }
+  .matrix-title { grid-column: 1 / -1; margin-bottom: 5px; }
+  .matrix-cell span { display: block; text-align: center; font-size: .66rem; font-weight: 700; letter-spacing: -.04em; white-space: nowrap; }
+  .choices, .pick-row { grid-template-columns: 1fr; }
+  .rank { grid-template-columns: 1fr; }
+  .rank label { grid-template-columns: 48px 1fr; align-items: center; }
+}
+
+</style>
+  
+</head>
+<body>
+  <div class="shell">
+    <header class="masthead"><span class="brand-mark" aria-hidden="true">R</span><span>리프레임 <small>이동 경험 조사</small></span></header>
+    <main class="panel" id="main">
+      <div class="progress" id="progress" hidden>
+        <span id="step-label"></span>
+        <progress id="step-bar" max="8" value="1" aria-labelledby="step-label"></progress>
+      </div>
+      <section id="welcome" aria-labelledby="welcome-title">
+        <p class="eyebrow">수업 과제 · 익명 설문</p>
+        <h1 id="welcome-title">자동차와 이동 방법에 대한 생각 조사</h1>
+        <p class="lead">평소 이동하는 방식과 자동차에 대한 생각을 들려주세요.</p>
+        <ul class="summary">
+          <li>약 10분</li><li>어려운 질문은 건너뛸 수 있어요</li>
+        </ul>
+        <p class="intro">현대자동차 블루오션 전략 수업 과제로 진행합니다. 이름·연락처·차량번호·정확한 주소는 적지 말아 주세요.</p>
+        <label class="consent"><input id="consent" type="checkbox"> 안내를 읽었으며, 만 19세 이상이고 설문 참여에 동의합니다.</label>
+        <p class="error" id="consent-error" role="alert" hidden>설문을 시작하려면 참여 조건을 확인해 주세요.</p>
+        <div class="actions start"><button class="secondary" id="decline" type="button">참여하지 않기</button><button class="primary" id="begin" type="button">설문 시작 <span aria-hidden="true">→</span></button></div>
+      </section>
+      <form id="survey" novalidate hidden>
+        <div id="steps"></div>
+        <p class="error" id="form-error" role="alert" hidden></p>
+        <div class="actions"><button class="secondary" id="back" type="button">← 이전</button><button class="primary" id="next" type="button">다음 →</button></div>
+      </form>
+      <section id="done" hidden>
+        <h1 tabindex="-1" id="done-title"></h1>
+        <p class="lead" id="done-copy"></p>
+      </section>
+    </main>
+    <footer id="preview-notice">미리보기 · 제출해도 실제 응답은 저장되지 않아요.</footer>
+  </div>
+<script>
+const ratings = [
+  [
+    "브랜드",
+    [
+      [
+        "현대",
+        ""
+      ],
+      [
+        "토요타",
+        ""
+      ],
+      [
+        "폭스바겐",
+        ""
+      ],
+      [
+        "포드",
+        ""
+      ],
+      [
+        "테슬라",
+        ""
+      ]
+    ],
+    [
+      [
+        "보유비용의 경제성",
+        "연료·충전비, 보험료, 세금, 정비비, 되팔 때 가치 하락까지 생각한 유지비 부담이 적다"
+      ],
+      [
+        "구매가격의 경제성",
+        "필요한 사양을 갖춘 차를 할인·옵션까지 따져 합리적인 가격에 살 수 있다"
+      ],
+      [
+        "안전성",
+        "사고를 예방하고, 사고가 나도 탑승자를 잘 보호한다"
+      ],
+      [
+        "품질 및 내구 신뢰성",
+        "결함·고장이 적고 오래 타도 품질이 유지된다"
+      ],
+      [
+        "주행 성능",
+        "가속·제동·핸들링 등 기본 주행 성능이 우수하다"
+      ],
+      [
+        "디자인 매력",
+        "외관과 실내 디자인이 내 취향에 맞고 매력적이다"
+      ],
+      [
+        "브랜드 이미지 및 위상",
+        "브랜드의 명성과 사회적 이미지가 좋다"
+      ],
+      [
+        "운전자 보조 편의",
+        "차로 유지·차간거리 조절·주차 보조가 실제로 운전 부담을 줄여 준다"
+      ],
+      [
+        "환경에 대한 우려",
+        "배출가스·연비·전동화(하이브리드·전기) 면에서 환경 부담이 적다"
+      ]
+    ],
+    [
+      "소유·주로 이용",
+      "시승·렌트로 직접 운전",
+      "동승만 해 봄",
+      "리뷰·지인 등 정보만 앎",
+      "잘 모름"
+    ]
+  ],
+  [
+    "이동 방법",
+    [
+      [
+        "자가용",
+        "내 집이 산 차를 직접 운전"
+      ],
+      [
+        "장기렌트",
+        "매달 렌트료를 내고 빌린 차를 직접 운전"
+      ],
+      [
+        "대중교통",
+        "버스·지하철·기차"
+      ],
+      [
+        "택시",
+        "일반·호출 택시"
+      ],
+      [
+        "카셰어링",
+        "앱으로 예약해 필요한 시간만 운전(쏘카 등)"
+      ]
+    ],
+    [
+      [
+        "전체 이동 비용의 경제성",
+        "같은 기간 이동하는 데 드는 전체 비용(차값 포함)이 적다"
+      ],
+      [
+        "월 지불 부담",
+        "매달 실제로 나가는 돈(할부·렌트료·요금)의 부담이 적다"
+      ],
+      [
+        "이용 시작의 접근성",
+        "필요할 때 바로 이용을 시작하기 쉽다"
+      ],
+      [
+        "전체 이동 시간",
+        "대기·환승·주차 후 걷는 시간까지 포함해 빨리 도착한다"
+      ],
+      [
+        "도착시간의 예측 가능성",
+        "도착 시간을 미리 예상하기 쉽다"
+      ],
+      [
+        "일정과 경로의 유연성",
+        "출발 시간·목적지·경유지를 필요에 맞게 바꾸기 쉽다"
+      ],
+      [
+        "신체적 편안함",
+        "이동하는 동안 몸이 편안하다 (좌석·혼잡·더위·추위)"
+      ],
+      [
+        "인식된 안전성",
+        "가는 길·기다림·탑승 중 사고나 신변 위협 걱정이 적다"
+      ],
+      [
+        "사적 공간의 확보",
+        "낯선 사람을 신경 쓰지 않고 나만의 공간을 가질 수 있다"
+      ],
+      [
+        "동행인과 짐의 수용 편의",
+        "평소 함께 다니는 사람·짐과 같이 이동하기 쉽다"
+      ],
+      [
+        "직접 운전 부담",
+        "직접 운전하며 드는 집중·피로가 적다"
+      ],
+      [
+        "주차 부담",
+        "주차 장소를 찾고 주차하는 수고가 적다"
+      ],
+      [
+        "차량 관리 책임",
+        "정비·수리·보험 등을 직접 챙길 일이 적다"
+      ]
+    ],
+    [
+      "최근 3년 안에 직접 이용",
+      "3년 전에만 이용",
+      "이용 안 했지만 정보는 앎",
+      "잘 모름"
+    ]
+  ]
+];
+const stages = [
+  [
+    "알아보고 시작하기",
+    "방법 찾기, 비교, 예약·결제, 계약, 차량 구매"
+  ],
+  [
+    "타러 가기·받기",
+    "정류장·차까지 가기, 기다리기, 차량 인수"
+  ],
+  [
+    "이동하기",
+    "탑승, 운전, 이동 중 경험"
+  ],
+  [
+    "함께 필요한 것",
+    "환승, 주차, 주유·충전, 카시트·앱 등"
+  ],
+  [
+    "관리하기",
+    "정비·수리, 보험·정기권 갱신, 요금 정산"
+  ],
+  [
+    "끝내기·바꾸기",
+    "하차·반납, 해지, 차 팔기·폐차, 다른 방법으로 바꾸기"
+  ]
+];
+const pain = [
+  "A · 돈이 많이 든다",
+  "B · 시간이나 수고가 많이 든다",
+  "C · 절차·방법이 복잡하다",
+  "D · 원할 때, 원하는 곳에서 하기 어렵다",
+  "E · 손해·사고·고장이 걱정된다",
+  "F · 즐겁지 않거나 내 이미지·취향과 맞지 않다",
+  "G · 환경에 부담이 된다",
+  "H · 기타",
+  "O · 겪어 봤지만 특별히 불편 없었음",
+  "X · 이 단계는 겪지 않았음·모르겠음"
+];
+
+// Paste the public Apps Script /exec URL here to turn on live collection.
+const COLLECTION_URL = "";
+
+const titles = ["나에 대해", "나의 최근 이동", "나와 자가용", "이동하며 겪은 불편", "자동차 브랜드 비교", "이동 방법 비교", "현대자동차에 대해", "마지막으로"];
+const $ = id => document.getElementById(id);
+const form = $("survey");
+const scores = ["1", "2", "3", "4", "5", "?"];
+const overall = Array.from({length: 11}, (_, i) => String(i));
+const touchRatings = matchMedia("(pointer: coarse)").matches;
+const preview = !COLLECTION_URL || !["http:", "https:"].includes(location.protocol);
+let stepIndex = 0;
+let submissionId = "";
+let pending = false;
+
+function make(tag, props = {}, children = []) {
+  const item = Object.assign(document.createElement(tag), props);
+  item.append(...children);
+  return item;
+}
+
+function copy(textContent, className = "hint", tag = "p") {
+  return make(tag, {textContent, className});
+}
+
+function block(title, children, fieldset = false) {
+  return make(fieldset ? "fieldset" : "div", {className: "block"}, [
+    copy(title, "", fieldset ? "legend" : "h2"), ...children
+  ]);
+}
+
+function select(name, label, options, initial = "선택") {
+  const element = make("select", {name});
+  element.setAttribute("aria-label", label);
+  element.append(new Option(initial, ""), ...options.map(option => {
+    const [value, text] = Array.isArray(option) ? option : [option, option];
+    return new Option(text, value);
+  }));
+  return element;
+}
+
+function field(label, input, className = "subfield") {
+  return make("label", {className}, [copy(label, "", "span"), input]);
+}
+
+function description(title, detail) {
+  const label = make("span", {}, [copy(title, "", "strong")]);
+  if (detail) label.append(copy(detail, "description", "span"));
+  return label;
+}
+
+function choices(name, title, labels, {multi = false, other = false, limit = Infinity} = {}) {
+  const group = make("div", {className: "choices"});
+  const extra = field("기타 내용을 적어 주세요 (선택)", make("input", {
+    type: "text", name: name + "_other", maxLength: 250, disabled: true
+  }));
+  extra.hidden = true;
+  const controls = labels.map(label => {
+    const input = make("input", {type: multi ? "checkbox" : "radio", name, value: label});
+    group.append(make("label", {className: "choice"}, [input, label]));
+    return input;
+  });
+  group.addEventListener("click", event => {
+    const input = event.target;
+    if (!multi && input.tagName === "INPUT" && input === group.lastPicked) input.checked = false;
+    group.lastPicked = input.checked ? input : null;
+    refresh();
+  });
+  group.addEventListener("change", refresh);
+  function refresh() {
+    const checked = controls.filter(input => input.checked);
+    controls.forEach(input => { input.disabled = checked.length >= limit && !input.checked; });
+    if (other) {
+      extra.hidden = !checked.some(input => input.value === "기타");
+      extra.lastElementChild.disabled = extra.hidden;
+    }
+  }
+  return block(title, other ? [group, extra] : [group], true);
+}
+
+function ratingControl(name, label, options) {
+  if (touchRatings) return select(name, label, options, "—");
+  const range = options === scores ? "1~5 또는 ?" : "0~10";
+  const input = make("input", {
+    type: "text", name, placeholder: "—", autocomplete: "off",
+    inputMode: options === overall ? "numeric" : "text", spellcheck: false
+  });
+  input.setAttribute("aria-label", label + " (" + range + ")");
+  input.addEventListener("input", () => {
+    input.value = input.value.normalize("NFKC").trim();
+    input.setCustomValidity(!input.value || options.includes(input.value) ? "" : range + "를 입력해 주세요.");
+    input.classList.toggle("has-value", !!input.value && input.validity.valid);
+  });
+  input.addEventListener("focus", () => input.select());
+  return input;
+}
+
+function matrix(names, rows, key, options) {
+  const result = make("div", {className: "matrix"});
+  result.append(make("div", {className: "matrix-row matrix-head"}, [
+    copy(rows.length > 1 ? "평가 기준" : "응답", "", "span"), ...names.map(([name]) => copy(name, "", "span"))
+  ]));
+  rows.forEach(([title, detail], i) => {
+    const row = make("div", {className: "matrix-row"}, [make("div", {className: "matrix-title"}, [
+      description(title, detail)
+    ])]);
+    names.forEach(([name], j) => {
+      const control = ratingControl(key + "_" + (i + 1) + "_" + (j + 1), title + " · " + name, options);
+      control.dataset.column = j;
+      row.append(make("label", {className: "matrix-cell"}, [copy(name, "", "span"), control]));
+    });
+    result.append(row);
+  });
+  return result;
+}
+
+function ranking(question, items) {
+  const ranking = make("div", {className: "rank"});
+  const controls = [1, 2, 3].map(i => select(question + "_" + i, i + "순위", items.map(([title], j) => [String(j + 1), (j + 1) + ". " + title])));
+  controls.forEach((control, i) => ranking.append(field((i + 1) + "순위", control, "")));
+  ranking.addEventListener("change", () => {
+    for (const control of controls) {
+      for (const option of control.options) {
+        option.disabled = !!option.value && controls.some(other => other !== control && other.value === option.value);
+      }
+    }
+  });
+  return ranking;
+}
+
+function comparison(index) {
+  const [name, names, rows, experience] = ratings[index];
+  const [expKey, rankKey, scoreKey, totalKey] = index === 0 ? ["q8", "q9", "q10", "q11"] : ["q12", "q13", "q14", "q15"];
+  const expTitle = index === 0 ? "Q8. 각 브랜드에 대한 최근 3년 동안의 가장 직접적인 경험을 골라 주세요." : "Q12. 각 이동 방법에 대한 경험을 골라 주세요.";
+  const exp = make("div", {className: "pick-list"}, names.map(([title, detail], i) => make("label", {className: "pick-row"}, [
+    description(title, detail), select(expKey + "_" + (i + 1), title + " 경험", experience)
+  ])));
+  const definitions = make("details", {}, [copy("평가 기준 뜻 보기", "", "summary"), make("ol", {}, rows.map(([title, detail]) => make("li", {}, [description(title, detail)])))]);
+  const scale = make("div", {className: "scale"}, [
+    "1 전혀 그렇지 않다", "2 그렇지 않은 편", "3 보통", "4 그런 편", "5 매우 그렇다", "? 판단하기 어려움"
+  ].map(value => copy(value, "", "strong")));
+  const grid = matrix(names, rows, scoreKey, scores);
+  const total = matrix(names, [["점수 (0~10)", ""]], totalKey, overall);
+  total.classList.add("total");
+  exp.addEventListener("change", () => {
+    [...exp.querySelectorAll("select")].forEach((control, index) => {
+      const disabled = control.value === "잘 모름";
+      for (const group of [grid, total]) {
+        for (const input of group.querySelectorAll('[data-column="' + index + '"]')) {
+          input.disabled = disabled;
+          if (disabled) {
+            input.value = "";
+            input.setCustomValidity("");
+          }
+          input.classList.toggle("has-value", !!input.value);
+        }
+      }
+    });
+  });
+  return [
+    copy(index === 0 ? "자동차를 고르는 상황을 떠올려 주세요." : "Q1에서 떠올린 이동을 각 방법으로 한다고 생각해 주세요.", "lead"),
+    block(expTitle, [copy("‘잘 모름’을 고른 " + name + "의 점수 칸은 자동으로 건너뛰어요."), exp]),
+    block((index === 0 ? "Q9. 자동차를" : "Q13. 이동 방법을") + " 고를 때 가장 중요한 기준 3개를 순서대로 골라 주세요.", [ranking(rankKey, rows), definitions]),
+    block(index === 0 ? "Q10. 각 브랜드가 아래 기준을 얼마나 잘 갖추고 있나요?" : "Q14. 각 이동 방법에 아래 문장이 얼마나 해당하나요?", [
+      copy((touchRatings ? "각 칸을 눌러 점수를 골라 주세요." : "각 칸에 1~5 또는 ?를 입력해 주세요. Tab 키로 다음 칸으로 이동할 수 있어요.") + " 각 대상을 따로 평가해 주세요. 비용과 부담은 적을수록 높은 점수예요. 직접 이용하지 않았어도 구체적인 정보가 있다면 답해 주세요."),
+      scale, grid
+    ]),
+    block(index === 0 ? "Q11. 지금 차를 고른다면, 각 브랜드는 얼마나 좋은 선택인가요?" : "Q15. Q1의 이동을 해결하는 방법으로서, 각 방법은 얼마나 좋은 선택인가요?", [
+      copy(index === 0 ? "0 전혀 고르고 싶지 않음 · 10 매우 만족스러운 선택" : "0 전혀 아님 · 10 매우 좋은 선택"),
+      total
+    ])
+  ];
+}
+
+const painControls = stages.map(([title, detail], i) => {
+  const input = select("q5_" + (i + 1), title, pain.map(option => [option[0], option]));
+  const extra = field("기타 내용을 적어 주세요 (선택)", make("input", {
+    type: "text", name: "q5_other_" + (i + 1), maxLength: 250, disabled: true
+  }));
+  extra.hidden = true;
+  const row = make("div", {}, [make("label", {className: "pick-row"}, [description((i + 1) + ". " + title, detail), input]), extra]);
+  return {input, extra, row};
+});
+const q6 = select("q6", "가장 크게 방해가 된 단계", []);
+const q7 = choices("q7", "Q7. 그 불편은 실제로 어느 정도 영향을 주었나요?", [
+  "1 불편했지만 거의 지장 없었음", "2 조금 늦어지거나 수고가 더 들었음", "3 눈에 띄게 어려워졌음", "4 일부를 포기했음", "5 아예 하지 못했음", "모르겠음"
+]);
+const followUp = make("div", {hidden: true}, [block("Q6. 가장 크게 방해가 된 단계는 몇 번인가요?", [q6]), q7]);
+for (const {input, extra} of painControls) {
+  input.addEventListener("change", () => {
+    extra.hidden = input.value !== "H";
+    extra.lastElementChild.disabled = extra.hidden;
+    const eligible = painControls.flatMap(({input}, i) => /^[A-H]$/.test(input.value) ? [[String(i + 1), stages[i][0]]] : []);
+    const old = q6.value;
+    q6.replaceChildren(new Option("선택", ""), ...eligible.map(([id, title]) => new Option(id + ". " + title, id)), new Option("모르겠음", "?"));
+    q6.value = [...q6.options].some(option => option.value === old) ? old : "";
+    followUp.hidden = eligible.length === 0;
+    q6.disabled = followUp.hidden;
+    for (const input of q7.querySelectorAll("input")) {
+      input.disabled = followUp.hidden;
+      if (followUp.hidden) input.checked = false;
+    }
+  });
+}
+
+const sections = [
+  [
+    choices("age", "연령대", ["만 19~29세", "30대", "40대", "50대", "60대 이상", "응답 안 함"]),
+    choices("region", "생활 지역", ["대도시 중심", "대도시 외곽", "중소도시", "읍·면·농어촌"]),
+    choices("driving", "운전", ["직접 운전함", "면허는 있지만 거의 안 함", "면허 없음"])
+  ],
+  [
+    copy("최근 한 달 동안 가장 자주 한 이동 하나를 떠올려 주세요. 이후 질문은 이 이동을 기준으로 답해 주세요.", "lead"),
+    copy("Q1. 그 이동은 어떤 이동인가요?", "", "h2"),
+    choices("q1_purpose", "목적", ["출퇴근·통학", "업무", "장보기·일상 용무", "가족 돌봄", "여가"]),
+    choices("q1_frequency", "횟수", ["주 1일 미만", "주 1~2일", "주 3~4일", "주 5일 이상"]),
+    choices("q1_distance", "편도 거리", ["5km 미만", "5~15km", "15~30km", "30km 이상"]),
+    choices("q1_people", "함께 간 사람 (해당하는 것 모두)", ["주로 혼자", "성인", "어린 자녀", "도움이 필요한 사람"], {multi: true}),
+    choices("q1_luggage", "짐 (해당하는 것 모두)", ["소지품 정도", "장보기 짐", "유모차·큰 짐", "업무용 물품"], {multi: true}),
+    choices("q2", "Q2. 그 이동에 주로 이용한 방법 하나는 무엇인가요?", ["자가용(내 차·가족 차)", "장기렌트·리스 차", "대중교통", "택시·호출", "카셰어링·단기렌트", "걷기·자전거·킥보드", "기타"], {other: true})
+  ],
+  [
+    copy("여기서 자가용은 내 집(가족)이 사거나 장기렌트·리스로 오랫동안 쓰는 승용차를 뜻해요. 대중교통·택시·카셰어링은 제외해요.", "lead"),
+    choices("q3", "Q3. 지금 나와 자가용의 관계에 가장 가까운 것 하나를 골라 주세요.", ["자가용을 쓰고 있고, 앞으로도 계속 쓸 생각이다", "자가용을 쓰지만, 줄이거나 다른 방법으로 바꾸려고 한다", "예전에는 썼지만 지금은 쓰지 않는다", "자가용을 알아본 적이 있지만, 쓰지 않기로 했거나 미뤘다", "잘 모르겠다"]),
+    choices("q4", "Q4. Q3처럼 답한 가장 큰 이유 하나를 골라 주세요.", ["지금 방법으로 충분함", "차를 사거나 계약할 목돈", "매달 나가는 돈", "운전하는 부담", "주차가 어려움", "정비·보험 등 관리가 번거로움", "이용할 일이 적음", "사고·고장이 걱정됨", "동행·짐 때문에 차가 필요함", "면허·건강 등 개인 사정", "이미지·취향 때문에", "환경을 생각해서", "기타", "특별한 이유 없음"], {other: true})
+  ],
+  [
+    copy("Q2에서 고른 방법으로 최근 실제로 겪은 일을 떠올려 주세요. 직접 알아본 것도 경험에 포함돼요.", "lead"),
+    block("Q5. 단계마다 가장 불편했던 점 하나를 골라 주세요.", [make("div", {className: "pick-list"}, painControls.map(({row}) => row))]),
+    followUp
+  ],
+  comparison(0),
+  comparison(1),
+  [
+    choices("q16", "Q16. 현대자동차와 나의 관계에 가장 가까운 것 하나를 골라 주세요.", ["지금 주로 이용함", "예전에 이용했지만 지금은 아님", "고려했지만 선택하지 않음", "고려해 본 적 없음", "브랜드를 잘 모름"]),
+    choices("q17", "Q17. 다음에 차를 마련한다면 현대자동차를 후보에 넣을 생각이 있나요?", ["전혀 없음", "낮음", "보통", "높음", "매우 높음", "차를 마련할 생각 없음"]),
+    choices("q18", "Q18. Q17처럼 답한 가장 큰 이유를 최대 2개 골라 주세요.", [...ratings[0][2].map(([title]) => title), "원하는 차종이 없음", "다른 브랜드를 더 좋아함", "차 대신 다른 이동 방법이 나음", "기타"], {multi: true, other: true, limit: 2})
+  ],
+  [
+    block("Q19. 어떤 조건이나 서비스가 생기면, 자가용을 갖거나 지금의 이동 방법을 바꾸시겠어요?", [
+      field("자유 의견 (선택)", make("textarea", {name: "q19", maxLength: 1000})),
+      copy("이름·연락처·차량번호·정확한 주소는 적지 말아 주세요.")
+    ])
+  ]
+].map((content, index) => make("section", {hidden: true}, [
+  make("h1", {tabIndex: -1, textContent: titles[index]}), ...content
+]));
+$("steps").append(...sections);
+$("preview-notice").hidden = !preview;
+
+function showStep(index) {
+  stepIndex = index;
+  $("welcome").hidden = index >= 0;
+  form.hidden = index < 0;
+  $("progress").hidden = index < 0;
+  sections.forEach((section, i) => { section.hidden = index !== i; });
+  $("form-error").hidden = true;
+  if (index >= 0) {
+    $("step-label").textContent = (index + 1) + " / " + titles.length + " 단계";
+    $("step-bar").value = index + 1;
+    $("next").textContent = index === titles.length - 1 ? "응답 제출" : "다음 →";
+    sections[index].firstElementChild.focus({preventScroll: true});
+  } else {
+    $("begin").focus({preventScroll: true});
+  }
+  window.scrollTo(0, 0);
+}
+
+function end(title, message) {
+  $("welcome").hidden = true;
+  $("progress").hidden = true;
+  form.hidden = true;
+  $("done").hidden = false;
+  $("done-title").textContent = title;
+  $("done-copy").textContent = message;
+  $("done-title").focus();
+  window.scrollTo(0, 0);
+}
+
+function collect() {
+  const response = {};
+  for (const [key, value] of new FormData(form)) {
+    if (value) (response[key] ||= []).push(value);
+  }
+  return response;
+}
+
+function post(payload) {
+  return new Promise((resolve, reject) => {
+    const relay = make("iframe", {name: "collector-" + payload.token, title: "응답 전송", hidden: true});
+    const data = make("input", {type: "hidden", name: "payload", value: JSON.stringify(payload)});
+    const request = make("form", {action: COLLECTION_URL, method: "POST", target: relay.name, hidden: true}, [data]);
+    const timeout = setTimeout(() => finish(false), 25000);
+    function finish(ok) {
+      clearTimeout(timeout);
+      window.removeEventListener("message", receive);
+      relay.remove();
+      request.remove();
+      if (ok) resolve();
+      else reject(new Error("저장 확인 실패"));
+    }
+    function receive(event) {
+      const googleOrigin = /^https:\/\/(?:script\.google\.com|(?:[a-z0-9-]+\.)*googleusercontent\.com)$/.test(event.origin);
+      if (googleOrigin && event.data?.type === "reframe-receipt" && event.data.token === payload.token) {
+        finish(event.data.saved === true);
+      }
+    }
+    window.addEventListener("message", receive);
+    document.body.append(relay, request);
+    request.submit();
+  });
+}
+
+$("begin").addEventListener("click", () => {
+  $("consent-error").hidden = $("consent").checked;
+  if (!$("consent").checked) return $("consent").focus();
+  showStep(0);
+});
+$("decline").addEventListener("click", () => end("설문을 종료했어요.", "시간을 내주셔서 감사합니다."));
+$("back").addEventListener("click", () => showStep(stepIndex - 1));
+form.addEventListener("submit", event => event.preventDefault());
+form.addEventListener("change", event => {
+  if (event.target.tagName === "SELECT") event.target.classList.toggle("has-value", !!event.target.value);
+});
+$("next").addEventListener("click", async () => {
+  if (pending) return;
+  const invalidRating = sections[stepIndex].querySelector(".matrix input:invalid");
+  if (invalidRating) {
+    invalidRating.reportValidity();
+    return;
+  }
+  if (stepIndex < titles.length - 1) return showStep(stepIndex + 1);
+  if (preview) return end("미리보기를 마쳤어요.", "테스트 응답은 저장되지 않았어요.");
+  pending = true;
+  $("back").disabled = $("next").disabled = true;
+  $("next").textContent = "제출하는 중…";
+  $("form-error").hidden = true;
+  try {
+    submissionId ||= crypto.randomUUID();
+    await post({version: 1, id: submissionId, token: crypto.randomUUID(), consent: true, answers: collect()});
+    end("응답을 제출했어요.", "끝까지 함께해 주셔서 감사합니다.");
+  } catch {
+    $("form-error").textContent = "응답 저장을 확인하지 못했어요. 입력한 답변은 화면에 남아 있으니 잠시 후 다시 제출해 주세요.";
+    $("form-error").hidden = false;
+  } finally {
+    pending = false;
+    $("back").disabled = $("next").disabled = false;
+    $("next").textContent = "응답 제출";
+  }
+});
+
+</script>
+</body>
+</html>
