@@ -108,7 +108,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible
 .tile.hero .spark-line { stroke: #fff; fill: none; stroke-width: 2.5; }
 .tile.hero .spark-area { fill: rgba(255, 255, 255, 0.18); }
 .tile.hero text { fill: rgba(255, 255, 255, 0.85); font-size: 11px; font-family: var(--font-body); }
-.minis { grid-column: span 3; display: grid; grid-template-rows: repeat(3, 1fr); gap: 16px; }
+.minis { grid-column: span 3; display: grid; grid-auto-rows: 1fr; gap: 16px; }
 .minis .tile { padding: 14px 20px; flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; }
 .minis .tile .t-value { font-size: 30px; }
 .tile.coral { background: var(--coral); color: #fff; }
@@ -117,7 +117,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible
 .tile .t-ico { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, 0.25); }
 .tile .t-ico .ico { width: 22px; height: 22px; }
 .agecard { grid-column: span 5; }
-@media (max-width: 1080px) { .tile.hero { grid-column: span 6; } .agecard { grid-column: span 6; } .minis { grid-column: 1 / -1; grid-template-rows: none; grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 1080px) { .tile.hero { grid-column: span 6; } .agecard { grid-column: span 6; } .minis { grid-column: 1 / -1; grid-auto-rows: auto; grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 720px) { .tile.hero, .agecard { grid-column: 1 / -1; } .minis { grid-template-columns: 1fr; } .tile.hero .t-value { font-size: 52px; } }
 
 /* donut */
@@ -783,7 +783,7 @@ function render() {
   const secs = (hints.sections || []).map((sec) => ({ ...sec, re: new RegExp(sec.match), items: [] }));
   const etc = { id: "etc", title: "그 밖의 문항", desc: "", icon: "compare", color: "sky", items: [] };
   for (const it of items) (secs.find((sec) => sec.re.test(it.title)) || etc).items.push(it);
-  const allSecs = [{ id: "pace", title: "응답이 들어오는 속도", desc: "지금까지 모인 응답 수와 시간(또는 하루)마다 들어온 응답 수입니다.", icon: "trend", color: "mauve", items: [{ html: timelineCard }] }, ...secs, etc].filter((sec) => sec.items.length);
+  const allSecs = [...secs, etc].filter((sec) => sec.items.length);
   if (crossCard) allSecs.push({ id: "compare", title: "직접 골라 비교하기", desc: "두 문항을 골라, 한 문항의 답에 따라 다른 문항의 답이 어떻게 달라지는지 봅니다. 예: 연령대별로 자가용을 대하는 태도.", icon: "compare", color: "sky", items: [{ html: crossCard }] });
   const nav = `<nav class="nav hide-present" aria-label="바로가기">${allSecs.map((sec) => `<a href="#${sec.id}" class="c-${sec.color || "mauve"}"><i></i>${esc(sec.title)}</a>`).join("")}</nav>`;
   const secHTML = allSecs.map((sec) => `<section class="sec c-${sec.color || "mauve"}" id="${sec.id}"><div class="sec-head"><span class="s-ico">${icon(sec.icon)}</span><div><h2>${esc(sec.title)}</h2>${sec.desc ? `<p>${esc(sec.desc)}</p>` : ""}</div></div><div class="grid">${sec.items.map((x) => x.html).join("")}</div></section>`).join("");
@@ -795,8 +795,7 @@ function render() {
   const mini = (cls2, ic, label, value, unit, sub) => `<div class="tile ${cls2}"><div style="display:flex;flex-direction:column;gap:2px;min-width:0"><span class="t-label">${label}</span><span class="t-value">${value}${unit ? `<small>${unit}</small>` : ""}</span>${sub ? `<span class="t-sub">${sub}</span>` : ""}</div><span class="t-ico">${icon(ic)}</span></div>`;
   const minis = `<div class="minis">
     ${mini("coral", "plus", "오늘 들어온 응답", `+${todayN}`, "명", `${now.getMonth() + 1}월 ${now.getDate()}일`)}
-    ${end ? mini("amber", "calendar", "마감까지", `D-${daysLeft}`, "", projected != null ? `지금 속도면 약 ${projected}명` : `${+CFG.endDate.slice(5, 7)}/${+CFG.endDate.slice(8, 10)} 마감`) : ""}
-    ${mini("sage", "gauge", "하루 평균", perDay ? perDay.toFixed(1) : "-", "명", "첫 응답 이후")}
+    ${end ? mini("amber", "calendar", "마감까지", `D-${daysLeft}`, "", `${+CFG.endDate.slice(5, 7)}월 ${+CFG.endDate.slice(8, 10)}일 마감`) : ""}
   </div>`;
 
   const banner = (D.demo ? `<div class="banner">지금 보이는 것은 <b>예시 데이터</b>입니다. 실제 응답을 보려면 아래 <b>시트 연결하기</b>를 따라 하세요.</div>` : "") +
