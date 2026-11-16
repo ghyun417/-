@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>How the World Gets Around</title>
+<meta name="description" content="A 10-minute anonymous survey by university students in Korea about cars and everyday mobility.">
+<meta property="og:title" content="How does the world get around? · 10-min anonymous survey">
+<meta property="og:description" content="University students in Korea are comparing cars, public transport, taxis and car sharing across countries. Help us with 10 minutes.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: 한 장짜리 모바일 우선 안내 페이지. 언어 알약 → 설명 카드 → 큰 시작 버튼. */
+:root {
+  --bg: #efedf1; --surface: #ffffff; --ink: #2c2733; --muted: #6f6878; --track: #f1eef4;
+  --mauve: #a079a6; --mauve-deep: #87598e; --coral: #ec7773; --amber: #efbd6a; --sage: #79b294; --sky: #78a3d4;
+  --shadow: 0 1px 2px rgba(44, 32, 60, 0.04), 0 8px 24px rgba(44, 32, 60, 0.08);
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Poppins", "Inter", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #19161d; --surface: #241f29; --ink: #eee9f2; --muted: #a59dae; --track: #2e2934; --mauve-deep: #c49bca; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #19161d; --surface: #241f29; --ink: #eee9f2; --muted: #a59dae; --track: #2e2934; --mauve-deep: #c49bca; color-scheme: dark; }
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 48px;
+}
+main { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+.langs { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.langs button { border: 0; background: var(--surface); color: var(--ink); border-radius: 999px; padding: 8px 14px; font: inherit; font-size: 14px; cursor: pointer; box-shadow: var(--shadow); }
+.langs button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+button:focus-visible, a:focus-visible { outline: 2px solid var(--mauve-deep); outline-offset: 2px; }
+.hero { border-radius: 24px; padding: 28px 24px; color: #fff; background: linear-gradient(150deg, var(--mauve) 0%, var(--mauve-deep) 70%, var(--coral) 140%); box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 10px; }
+.hero .kicker { font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.9; }
+.hero h1 { font-family: var(--font-display); font-size: 30px; line-height: 1.2; margin: 0; text-wrap: balance; }
+.hero p { margin: 0; opacity: 0.95; }
+.facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.fact { background: var(--surface); border-radius: 16px; padding: 14px 12px; text-align: center; box-shadow: var(--shadow); }
+.fact b { display: block; font-family: var(--font-display); font-size: 20px; }
+.fact span { font-size: 12.5px; color: var(--muted); }
+.fact:nth-child(1) b { color: var(--coral); } .fact:nth-child(2) b { color: var(--sage); } .fact:nth-child(3) b { color: var(--sky); }
+.card { background: var(--surface); border-radius: 20px; padding: 20px 22px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 10px; }
+.card h2 { font-family: var(--font-display); font-size: 17px; margin: 0; }
+.card ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+.note { font-size: 14px; background: var(--track); border-radius: 12px; padding: 10px 14px; margin: 0; }
+.cta { display: block; text-align: center; text-decoration: none; background: var(--ink); color: var(--surface); font-family: var(--font-display); font-weight: 600; font-size: 18px; border-radius: 999px; padding: 16px 20px; box-shadow: var(--shadow); }
+.cta:hover { opacity: 0.92; }
+.small { font-size: 12.5px; color: var(--muted); text-align: center; margin: 0; }
+@media (max-width: 400px) { .hero h1 { font-size: 25px; } .fact b { font-size: 17px; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="langs" role="group" aria-label="Language">
+    <button type="button" data-l="en">English</button>
+    <button type="button" data-l="es">Español</button>
+    <button type="button" data-l="pt">Português</button>
+    <button type="button" data-l="fr">Français</button>
+    <button type="button" data-l="it">Italiano</button>
+  </div>
+  <section class="hero">
+    <span class="kicker" data-t="kicker"></span>
+    <h1 data-t="title"></h1>
+    <p data-t="lead"></p>
+  </section>
+  <div class="facts">
+    <div class="fact"><b data-t="f1b"></b><span data-t="f1"></span></div>
+    <div class="fact"><b data-t="f2b"></b><span data-t="f2"></span></div>
+    <div class="fact"><b data-t="f3b"></b><span data-t="f3"></span></div>
+  </div>
+  <section class="card">
+    <h2 data-t="whatH"></h2>
+    <ul><li data-t="w1"></li><li data-t="w2"></li><li data-t="w3"></li></ul>
+    <p class="note" data-t="langNote"></p>
+  </section>
+  <a class="cta" id="start" href="https://jiyoonhaan-collab.github.io/reframe-survey/" data-t="cta"></a>
+  <p class="small" data-t="foot"></p>
+</main>
+<script>
+"use strict";
+const SURVEY = "https://jiyoonhaan-collab.github.io/reframe-survey/";
+const T = {
+  en: {
+    kicker: "Student research · Korea", title: "How does the world get around?",
+    lead: "We are university students in Korea comparing cars, public transport, taxis and car sharing across countries. Your view from where you live really helps.",
+    f1b: "10 min", f1: "to finish", f2b: "Anonymous", f2: "nickname only", f3b: "No ads", f3: "academic use only",
+    whatH: "What you'll be asked", w1: "How you usually get around and what bothers you most along the way",
+    w2: "How you rate cars, public transport, taxis and car sharing", w3: "Your impression of a few car brands",
+    langNote: "On the first screen, pick your language at the top. The survey is available in English, Español and Français.",
+    cta: "Start the survey →", foot: "No name, phone number or address is collected. Thank you for helping!",
+  },
+  es: {
+    kicker: "Investigación estudiantil · Corea", title: "¿Cómo se mueve el mundo?",
+    lead: "Somos estudiantes universitarios en Corea y comparamos el coche, el transporte público, el taxi y el carsharing en distintos países. Tu opinión desde tu país nos ayuda muchísimo.",
+    f1b: "10 min", f1: "para terminar", f2b: "Anónima", f2: "solo un apodo", f3b: "Sin anuncios", f3: "solo uso académico",
+    whatH: "Qué te preguntaremos", w1: "Cómo te mueves normalmente y qué te molesta más en el camino",
+    w2: "Cómo valoras el coche, el transporte público, el taxi y el carsharing", w3: "Tu impresión de algunas marcas de coches",
+    langNote: "En la primera pantalla, elige «Español» arriba.",
+    cta: "Empezar la encuesta →", foot: "No pedimos nombre, teléfono ni dirección. ¡Gracias por ayudar!",
+  },
+  pt: {
+    kicker: "Pesquisa estudantil · Coreia", title: "Como o mundo se locomove?",
+    lead: "Somos estudantes universitários na Coreia comparando carro, transporte público, táxi e carro compartilhado em vários países. Sua opinião faz muita diferença.",
+    f1b: "10 min", f1: "para responder", f2b: "Anônima", f2: "só um apelido", f3b: "Sem anúncios", f3: "uso acadêmico",
+    whatH: "O que vamos perguntar", w1: "Como você costuma se locomover e o que mais incomoda no caminho",
+    w2: "Como você avalia carro, transporte público, táxi e carro compartilhado", w3: "Sua impressão sobre algumas marcas de carro",
+    langNote: "A pesquisa ainda não tem versão em português. Na primeira tela, escolha «Español» ou «English» no topo — as perguntas são curtas e de múltipla escolha.",
+    cta: "Começar a pesquisa →", foot: "Não pedimos nome, telefone nem endereço. Obrigado pela ajuda!",
+  },
+  fr: {
+    kicker: "Recherche étudiante · Corée", title: "Comment le monde se déplace-t-il ?",
+    lead: "Nous sommes des étudiants en Corée et nous comparons la voiture, les transports en commun, le taxi et l’autopartage dans plusieurs pays. Votre avis compte vraiment.",
+    f1b: "10 min", f1: "pour répondre", f2b: "Anonyme", f2: "un pseudo suffit", f3b: "Sans pub", f3: "usage académique",
+    whatH: "Ce que nous vous demanderons", w1: "Comment vous vous déplacez et ce qui vous gêne le plus",
+    w2: "Votre avis sur la voiture, les transports en commun, le taxi et l’autopartage", w3: "Votre impression de quelques marques automobiles",
+    langNote: "Sur le premier écran, choisissez « Français » en haut.",
+    cta: "Commencer le questionnaire →", foot: "Aucun nom, téléphone ni adresse n’est demandé. Merci de votre aide !",
+  },
+  it: {
+    kicker: "Ricerca studentesca · Corea", title: "Come si muove il mondo?",
+    lead: "Siamo studenti universitari in Corea e confrontiamo auto, trasporto pubblico, taxi e car sharing in vari paesi. Il tuo punto di vista ci aiuta davvero.",
+    f1b: "10 min", f1: "per rispondere", f2b: "Anonimo", f2: "basta un nickname", f3b: "Niente pubblicità", f3: "solo uso accademico",
+    whatH: "Cosa ti chiederemo", w1: "Come ti sposti di solito e cosa ti dà più fastidio",
+    w2: "Come valuti auto, trasporto pubblico, taxi e car sharing", w3: "La tua impressione su alcune marche di auto",
+    langNote: "Il questionario non è ancora in italiano. Nella prima schermata scegli «English», «Español» o «Français» in alto: le domande sono brevi e a scelta multipla.",
+    cta: "Inizia il questionario →", foot: "Non chiediamo nome, telefono o indirizzo. Grazie per l’aiuto!",
+  },
+};
+const params = new URLSearchParams(location.search);
+// 유입 경로(src)는 설문으로 그대로 넘깁니다. 설문이 이 값을 저장하도록 바뀌면 채널별로 셀 수 있습니다.
+const src = (params.get("src") || "").replace(/[^a-z0-9_-]/gi, "").slice(0, 40);
+function pick() {
+  const q = (params.get("lang") || "").slice(0, 2);
+  if (T[q]) return q;
+  for (const l of navigator.languages || [navigator.language || "en"]) { const k = String(l).slice(0, 2).toLowerCase(); if (T[k]) return k; }
+  return "en";
+}
+function apply(l) {
+  const t = T[l];
+  document.documentElement.lang = l;
+  document.querySelectorAll("[data-t]").forEach((el) => { el.textContent = t[el.dataset.t]; });
+  document.querySelectorAll("[data-l]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.l === l));
+  const u = new URL(SURVEY);
+  u.searchParams.set("lang", l);
+  if (src) u.searchParams.set("src", src);
+  document.getElementById("start").href = u.toString();
+}
+document.querySelectorAll("[data-l]").forEach((b) => b.addEventListener("click", () => apply(b.dataset.l)));
+apply(pick());
+</script>
+</body>
+</html>

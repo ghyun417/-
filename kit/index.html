@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>해외 응답 홍보 키트</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: 왼쪽 목차(넓은 화면) + 오른쪽 블록 카드. 카드마다 언어 탭과 복사 버튼. */
+:root {
+  --bg: #efedf1; --surface: #ffffff; --ink: #2c2733; --muted: #6f6878; --line: #e6e2ea; --track: #f1eef4;
+  --mauve: #a079a6; --mauve-deep: #87598e; --coral-deep: #d4544f; --amber: #efbd6a; --sage-deep: #3f8a64; --sky-deep: #3f78ba;
+  --shadow: 0 1px 2px rgba(44, 32, 60, 0.04), 0 6px 18px rgba(44, 32, 60, 0.06);
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-display: "Poppins", "IBM Plex Sans KR", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #19161d; --surface: #241f29; --ink: #eee9f2; --muted: #a59dae; --line: #352f3c; --track: #2e2934; --mauve-deep: #c49bca; --coral-deep: #f29a96; --sage-deep: #8fd0ae; --sky-deep: #9cc0ea; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #19161d; --surface: #241f29; --ink: #eee9f2; --muted: #a59dae; --line: #352f3c; --track: #2e2934; --mauve-deep: #c49bca; --coral-deep: #f29a96; --sage-deep: #8fd0ae; --sky-deep: #9cc0ea; color-scheme: dark; }
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 64px;
+}
+.wrap { max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 860px) { .wrap { grid-template-columns: 1fr; } nav.toc { position: static !important; } }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+h1 { font-size: 24px; }
+nav.toc { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 4px; background: var(--surface); border-radius: 18px; padding: 14px; box-shadow: var(--shadow); }
+nav.toc a { color: var(--ink); text-decoration: none; font-size: 14px; padding: 6px 10px; border-radius: 10px; }
+nav.toc a:hover { background: var(--track); }
+nav.toc .grp { font-size: 12px; color: var(--muted); padding: 8px 10px 2px; letter-spacing: 0.04em; }
+main { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.intro { background: linear-gradient(150deg, var(--mauve) 0%, var(--mauve-deep) 100%); color: #fff; border-radius: 22px; padding: 22px 24px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 8px; }
+.intro p { margin: 0; opacity: 0.95; }
+.intro b { color: #fff; }
+.block { background: var(--surface); border-radius: 20px; padding: 20px 22px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 12px; scroll-margin-top: 16px; min-width: 0; }
+.block header { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; justify-content: space-between; }
+.block h2 { font-size: 18px; }
+.who { font-size: 12.5px; padding: 2px 10px; border-radius: 999px; background: var(--track); color: var(--muted); white-space: nowrap; }
+.how { margin: 0; font-size: 14px; color: var(--muted); }
+.how b { color: var(--ink); }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tabs button { border: 0; background: var(--track); color: var(--ink); border-radius: 999px; padding: 5px 13px; font: inherit; font-size: 13px; cursor: pointer; }
+.tabs button[aria-selected="true"] { background: var(--ink); color: var(--surface); }
+button:focus-visible, a:focus-visible { outline: 2px solid var(--mauve-deep); outline-offset: 2px; }
+pre.msg { margin: 0; white-space: pre-wrap; word-break: break-word; font-family: var(--font-body); font-size: 14px; background: var(--track); border-radius: 14px; padding: 14px 16px; max-height: 420px; overflow: auto; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.copy { border: 0; background: var(--mauve-deep); color: #fff; border-radius: 999px; padding: 7px 16px; font: inherit; font-size: 13.5px; cursor: pointer; }
+.copied { font-size: 13px; color: var(--sage-deep); }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+td, th { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; font-size: 12.5px; }
+td code { font-size: 12.5px; word-break: break-all; }
+.tblwrap { overflow-x: auto; }
+.warn { margin: 0; font-size: 13.5px; background: color-mix(in srgb, var(--amber) 28%, var(--surface)); border-radius: 12px; padding: 10px 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc" aria-label="목차"></nav>
+  <main id="main">
+    <section class="intro">
+      <h1>해외 응답 홍보 키트</h1>
+      <p>필요한 문구를 <b>언어 탭</b>에서 고르고 <b>복사</b>를 눌러 그대로 붙여 넣으세요. 링크에는 채널 표시(<code>?src=</code>)가 이미 들어 있습니다.</p>
+      <p>번역은 Claude가 썼습니다. 가능하면 원어민 친구에게 한 번 봐 달라고 하세요. 모든 글에서 <b>‘학술 연구, 익명, 10분’</b>을 분명히 밝히고, 커뮤니티 규칙과 관리자 허락을 먼저 확인하세요.</p>
+    </section>
+  </main>
+</div>
+<script>
+"use strict";
+const GO = "https://ghyun417.github.io/-/go/";
+const L = (src, lang) => `${GO}?src=${src}${lang ? `&lang=${lang}` : ""}`;
+const LANG_NAMES = { ko: "한국어", en: "English", es: "Español", pt: "Português", fr: "Français", it: "Italiano" };
+
+const BLOCKS = [
+  { group: "시작 전에" },
+  { id: "links", title: "채널별 링크", who: "모든 팀원", how: "글을 올릴 곳에 맞는 링크를 쓰세요. 설문이 유입 경로를 기록하도록 바뀌면 채널별로 몇 명이 왔는지 셀 수 있습니다.", table: [
+    ["유학생·지인 WhatsApp", L("wa")], ["Facebook 그룹", L("fb")], ["Reddit", L("reddit")], ["Instagram", L("ig")], ["TikTok", L("tiktok")],
+    ["YouTube 쇼츠", L("yt")], ["HelloTalk·Tandem", L("langx")], ["SurveySwap·SurveyCircle", L("swap")], ["크리에이터 공유", L("creator")], ["X", L("x")],
+  ] },
+  { id: "teammate", title: "팀원에게: 설문 수정 요청", who: "설문 페이지 담당 팀원", how: "해외 응답을 나라별로 보려면 꼭 필요합니다. 오늘 보내 주세요.", msgs: { ko:
+`해외 응답 모으기 전에 설문 페이지에 몇 가지만 부탁할게!
+
+[꼭 필요]
+1. 국가 문항 추가: "주로 생활하는 국가" (미국, 캐나다, 멕시코, 브라질, 아르헨티나, 스페인, 프랑스, 이탈리아, 독일, 영국, 한국, 기타)
+   → 이게 없으면 해외 응답이 와도 어느 나라 응답인지 알 수 없어.
+2. 응답 언어 저장: 응답자가 고른 언어(ko/en/es/de/fr)를 같이 저장
+3. 링크 주소의 ?lang= 값으로 첫 화면 언어 자동 선택, ?src= 값(유입 채널)도 같이 저장
+   (Apps Script가 새 항목을 시트 열로 저장하는지도 확인 부탁해)
+
+[있으면 큰 도움]
+4. 포르투갈어·이탈리아어 번역 추가 (브라질·이탈리아 응답자용)
+5. 마지막 화면에 "친구에게 공유" 버튼 + 공유 링크: https://ghyun417.github.io/-/go/?src=share
+
+혹시 저장소에 나(ghyun417)를 협업자로 초대해 주면 Claude랑 같이 직접 고쳐서 확인 후 반영할게.
+기존 응답 열 순서는 그대로 두고, 새 열은 맨 뒤에 붙이면 대시보드가 안 깨져!` } },
+  { id: "office", title: "학교 국제처에 보내는 메일", who: "팀 대표", how: "협정 대학이나 외국인 유학생회에 공유를 부탁하는 메일입니다. [ ] 안을 채우세요.", msgs: { ko:
+`제목: [학과/수업명] 학술 설문 해외 협정교 공유 협조 요청
+
+안녕하세요, [학과] [이름]입니다.
+[수업명] 과제로 "자동차 소유와 이동 방법에 대한 국가별 인식" 설문을 진행하고 있습니다.
+북미·유럽·중남미 응답이 필요해, 가능하시다면 해외 협정 대학 담당자나 외국인 유학생회에 아래 링크를 공유해 주실 수 있을지 여쭙습니다.
+
+- 소요 시간: 약 10분 / 익명(이름·연락처 미수집) / 학술 목적에만 사용
+- 언어: 영어, 스페인어, 프랑스어 (포르투갈어·이탈리아어 안내 포함)
+- 링크: ${L("office")}
+- 마감: 11월 30일
+
+바쁘신 중에 감사합니다.
+[이름] 드림 / [연락처]` } },
+
+  { group: "① 사람을 통해 (가장 확실)" },
+  { id: "intl", title: "유학생에게: 부모님·지인께 전달 부탁", who: "외국인 유학생, 해외 친구", how: "<b>본인 말고 가족·지인에게</b> 보내 달라고 부탁하는 게 핵심입니다. 40~60대 현지인 응답을 얻을 수 있어요. 먼저 ‘부탁’ 메시지를 보내고, 그들이 전달할 ‘전달용’ 메시지를 함께 주세요.", msgs: {
+    ko: `안녕! 우리 수업 과제로 "나라별로 사람들이 차와 이동 방법을 어떻게 생각하는지" 설문을 하고 있어.\n혹시 너희 가족 단톡방이나 고향 친구들한테 한 번만 보내 줄 수 있을까? 특히 부모님 세대 응답이 정말 필요해 🙏\n아래 '전달용' 메시지를 그대로 복사해서 보내 주면 돼. 10분 정도 걸리고 익명이야. 고마워!`,
+    en: `Hi! My friend in Korea is doing a university research survey on how people in different countries get around (cars, public transport, taxis, car sharing).\nIt takes about 10 minutes and is anonymous. Answers from people of every age really help — could you fill it in and share it? 🙏\n${L("wa", "en")}`,
+    es: `¡Hola! Un amigo en Corea está haciendo una encuesta universitaria sobre cómo se mueve la gente en distintos países (coche, transporte público, taxi, carsharing).\nSon unos 10 minutos y es anónima. Las respuestas de personas de todas las edades ayudan muchísimo. ¿Me ayudas a responderla y compartirla? 🙏\n${L("wa", "es")}`,
+    pt: `Oi! Um amigo na Coreia está fazendo uma pesquisa universitária sobre como as pessoas se locomovem em vários países (carro, transporte público, táxi, carro compartilhado).\nLeva uns 10 minutos e é anônima. Respostas de todas as idades ajudam muito — pode responder e repassar? 🙏\n${L("wa", "pt")}`,
+    fr: `Bonjour ! Un ami en Corée mène une enquête universitaire sur la façon dont les gens se déplacent selon les pays (voiture, transports en commun, taxi, autopartage).\nCela prend environ 10 minutes et c’est anonyme. Les réponses de tous les âges sont précieuses — pourriez-vous y répondre et la partager ? 🙏\n${L("wa", "fr")}`,
+    it: `Ciao! Un amico in Corea sta facendo un questionario universitario su come si spostano le persone nei vari paesi (auto, trasporto pubblico, taxi, car sharing).\nCi vogliono circa 10 minuti ed è anonimo. Le risposte di tutte le età sono preziose: puoi rispondere e condividerlo? 🙏\n${L("wa", "it")}`,
+  } },
+
+  { group: "② 커뮤니티 (30~50대)" },
+  { id: "fbadmin", title: "Facebook 그룹 관리자에게 허락 요청", who: "팀원 본인 Facebook 계정", how: "그룹에 가입한 뒤 <b>관리자에게 먼저</b> 메시지를 보내세요. 허락 없이 올리면 삭제되고 차단됩니다.", msgs: {
+    en: `Hi! I'm a university student in Korea. Our team is running an academic survey on how people choose between owning a car, public transport, taxis and car sharing in different countries.\nWould it be okay to share the survey link once in your group? It's anonymous, takes about 10 minutes, and has no ads or sales. We'll happily share the results with the group afterwards. Thank you!`,
+    es: `¡Hola! Soy estudiante universitario en Corea. Mi equipo está haciendo una encuesta académica sobre cómo la gente elige entre tener coche, el transporte público, el taxi y el carsharing en distintos países.\n¿Te parece bien que comparta el enlace una vez en el grupo? Es anónima, dura unos 10 minutos y no tiene publicidad ni ventas. Después compartiremos los resultados con el grupo. ¡Gracias!`,
+    pt: `Olá! Sou estudante universitário na Coreia. Minha equipe está fazendo uma pesquisa acadêmica sobre como as pessoas escolhem entre ter carro, transporte público, táxi e carro compartilhado em vários países.\nPosso compartilhar o link uma vez no grupo? É anônima, leva uns 10 minutos e não tem propaganda nem venda. Depois compartilhamos os resultados com o grupo. Obrigado!`,
+    fr: `Bonjour ! Je suis étudiant en Corée. Notre équipe mène une enquête universitaire sur la façon dont les gens choisissent entre posséder une voiture, les transports en commun, le taxi et l’autopartage selon les pays.\nPuis-je partager le lien une fois dans le groupe ? C’est anonyme, cela prend environ 10 minutes, sans publicité ni vente. Nous partagerons volontiers les résultats ensuite. Merci !`,
+    it: `Ciao! Sono uno studente universitario in Corea. Il mio gruppo sta svolgendo un questionario accademico su come le persone scelgono tra auto di proprietà, trasporto pubblico, taxi e car sharing nei vari paesi.\nPosso condividere il link una volta nel gruppo? È anonimo, dura circa 10 minuti e non contiene pubblicità né vendite. Poi condivideremo volentieri i risultati. Grazie!`,
+  } },
+  { id: "fbpost", title: "Facebook 그룹·커뮤니티 게시 글", who: "허락받은 뒤", how: "질문으로 시작하면 댓글이 달리고, 댓글이 달리면 더 많이 노출됩니다. 댓글에는 꼭 답하세요.", msgs: {
+    en: `Is owning a car still worth it in 2026? 🚗🚇🚕\n\nWe're university students in Korea comparing how people in different countries get around — car ownership vs public transport, taxis and car sharing. We'd love the view from people who actually live here.\n\n⏱ ~10 minutes · 🔒 anonymous (nickname only) · 🎓 academic use only\n👉 ${L("fb", "en")}\n\nCurious what you think: if you could drop one cost of owning a car, which would it be? Tell us in the comments 👇`,
+    es: `¿Todavía vale la pena tener coche en 2026? 🚗🚇🚕\n\nSomos estudiantes universitarios en Corea y comparamos cómo se mueve la gente en distintos países: tener coche frente a transporte público, taxi y carsharing. Nos encantaría saber la opinión de quienes viven aquí.\n\n⏱ ~10 minutos · 🔒 anónima (solo un apodo) · 🎓 solo uso académico\n👉 ${L("fb", "es")}\n\nY tú, si pudieras eliminar un gasto del coche, ¿cuál sería? Cuéntanos en los comentarios 👇`,
+    pt: `Ainda vale a pena ter carro em 2026? 🚗🚇🚕\n\nSomos estudantes universitários na Coreia comparando como as pessoas se locomovem em vários países: carro próprio x transporte público, táxi/app e carro compartilhado. Queremos muito a opinião de quem mora aqui.\n\n⏱ ~10 minutos · 🔒 anônima (só um apelido) · 🎓 uso acadêmico\n👉 ${L("fb", "pt")}\n\nE você: se pudesse cortar um custo do carro, qual seria? Conta aqui nos comentários 👇`,
+    fr: `Avoir une voiture, est-ce encore rentable en 2026 ? 🚗🚇🚕\n\nNous sommes des étudiants en Corée et comparons la façon dont on se déplace selon les pays : voiture personnelle ou transports en commun, taxi et autopartage. Votre avis compte !\n\n⏱ ~10 minutes · 🔒 anonyme (un pseudo suffit) · 🎓 usage académique\n👉 ${L("fb", "fr")}\n\nEt vous, si vous pouviez supprimer un coût lié à la voiture, lequel ? Dites-le en commentaire 👇`,
+    it: `Nel 2026 conviene ancora avere un’auto? 🚗🚇🚕\n\nSiamo studenti universitari in Corea e confrontiamo come ci si sposta nei vari paesi: auto di proprietà o trasporto pubblico, taxi e car sharing. Ci piacerebbe avere il parere di chi vive qui.\n\n⏱ ~10 minuti · 🔒 anonimo (basta un nickname) · 🎓 solo uso accademico\n👉 ${L("fb", "it")}\n\nE tu, se potessi eliminare un costo dell’auto, quale sceglieresti? Scrivilo nei commenti 👇`,
+  } },
+  { id: "reddit", title: "Reddit: r/SampleSize 게시 + 운영자 문의", who: "오래된 Reddit 계정", how: "r/SampleSize는 <b>[Academic] 태그(flair)가 필수</b>이고, 제목에 주제와 대상을 적어야 합니다. 다른 게시판(r/cars, r/transit, 나라별 게시판)은 <b>운영자에게 먼저</b> 물어보세요.", msgs: {
+    en: `[제목]\n[Academic] How do you get around? Car ownership vs public transport, taxis & car sharing (Everyone 18+, especially North America, Europe & Latin America)\n\n[본문]\nHi r/SampleSize! We're university students in Korea studying why people own (or don't own) a car, and how they compare it with public transport, taxis and car sharing across countries.\n\n- About 10 minutes\n- Anonymous: nickname only, no name/email/address\n- Available in English, Spanish and French\n- Purely academic; we'll post results here after it closes (Nov 30)\n\nSurvey: ${L("reddit", "en")}\n\nHappy to answer questions in the comments, and we'll gladly take your surveys in return!\n\n----- [다른 게시판 운영자에게 보낼 modmail] -----\nHi mods! We're university students in Korea running a short academic survey (≈10 min, anonymous, no ads) on car ownership vs other ways of getting around. Would it be okay to post it once in your community? We'll follow any rules or flair you prefer. Thanks for considering!`,
+  } },
+  { id: "langx", title: "HelloTalk · Tandem 게시 글", who: "언어교환 앱", how: "한국어를 배우는 사람들이 많습니다. 짧은 한국어 인사로 시작하면 반응이 좋아요. 중남미 사용자에게 특히 효과적입니다.", msgs: {
+    en: `안녕하세요! 👋 Korean university students here 🇰🇷\nWe need help from people around the world for our research on how people get around (cars, public transport, taxis, car sharing).\n10 min · anonymous 🙏 감사합니다!\n${L("langx", "en")}\nIf you have a Korean question, ask me in the comments — I'll help you back 😊`,
+    es: `¡안녕하세요! 👋 Somos estudiantes universitarios en Corea 🇰🇷\nNecesitamos ayuda de gente de todo el mundo para nuestra investigación sobre cómo se mueve la gente (coche, transporte público, taxi, carsharing).\n10 min · anónima 🙏 감사합니다!\n${L("langx", "es")}\nSi tienes alguna duda de coreano, pregúntame en los comentarios y te ayudo 😊`,
+    pt: `안녕하세요! 👋 Somos estudantes universitários na Coreia 🇰🇷\nPrecisamos da ajuda de pessoas do mundo todo para nossa pesquisa sobre como as pessoas se locomovem (carro, transporte público, táxi, carro compartilhado).\n10 min · anônima 🙏 감사합니다!\n${L("langx", "pt")}\nSe tiver dúvida de coreano, pergunta nos comentários que eu ajudo 😊`,
+  } },
+
+  { group: "③ 설문 교환" },
+  { id: "swap", title: "SurveySwap · SurveyCircle 등록 문구", who: "팀원 모두 (포인트 모으기)", how: "등록 후 <b>팀원이 하루 3~5개씩</b> 다른 사람 설문에 답해 포인트를 모으세요. 포인트가 있어야 내 설문이 노출됩니다.", msgs: {
+    en: `Title: How do you get around? Cars vs public transport, taxis & car sharing\n\nDescription: Academic survey by university students in Korea comparing car ownership with other ways of getting around in different countries. Anonymous (nickname only), about 10 minutes, available in English, Spanish and French. Anyone 18+ can take part; responses from North America, Europe and Latin America are especially welcome.\n\nLink: ${L("swap", "en")}`,
+  } },
+
+  { group: "④ 짧은 영상 (보조)" },
+  { id: "creator", title: "현지 크리에이터에게 보내는 DM", who: "자동차·도시·통근·한국문화 크리에이터", how: "팔로워 수천~수만 명 규모가 답장을 잘 합니다. <b>스토리 공유 한 번</b>만 부탁하세요. 10명에게 보내면 1~2명이 도와주는 정도가 보통입니다.", msgs: {
+    en: `Hi [name]! I really enjoy your videos about [topic] 🙌\nWe're university students in Korea doing academic research on how people choose between owning a car and other ways of getting around in different countries.\nWould you consider sharing our survey once in your story? It's anonymous, ~10 min, no ads or sales. We'd be happy to send you the results by country when we're done (Nov 30).\n${L("creator", "en")}\nThank you either way!`,
+    es: `¡Hola [nombre]! Me encantan tus videos sobre [tema] 🙌\nSomos estudiantes universitarios en Corea y hacemos una investigación académica sobre cómo la gente elige entre tener coche y otras formas de moverse en distintos países.\n¿Te animarías a compartir nuestra encuesta una vez en tu historia? Es anónima, dura ~10 min y no tiene publicidad. Con gusto te enviamos los resultados por país al terminar (30 de nov.).\n${L("creator", "es")}\n¡Gracias de todos modos!`,
+    pt: `Oi [nome]! Curto muito seus vídeos sobre [tema] 🙌\nSomos estudantes universitários na Coreia fazendo uma pesquisa acadêmica sobre como as pessoas escolhem entre ter carro e outras formas de se locomover em vários países.\nVocê toparia compartilhar nossa pesquisa uma vez no seu story? É anônima, leva ~10 min e não tem propaganda. Mandamos os resultados por país quando terminar (30/11).\n${L("creator", "pt")}\nObrigado de qualquer forma!`,
+  } },
+  { id: "video", title: "짧은 영상 대본 3개 (15~25초)", who: "TikTok · 릴스 · 쇼츠 동시 업로드", how: "같은 영상에 <b>자막 언어만 바꿔</b> 나라별로 올리세요. 첫 1~2초에 질문을 크게 띄우고, 마지막에 ‘프로필 링크’를 말합니다. 캡션 끝에 해시태그를 붙이세요.", msgs: {
+    en: `[영상 1 · 질문형]\n0–2s (화면 큰 글씨): "Is owning a car still worth it in 2026?"\n2–8s: "In Korea we're asking people all over the world: car, public transport, taxi or car sharing?"\n8–15s: "Drop your country flag in the comments and tell us what you'd pick 👇"\n15–20s: "Our 10-min anonymous survey is in my bio. Let's see which country wins!"\n캡션: Car or no car? 🚗🚇 Tell us your country 👇 #carsoftiktok #commute #urbanism #studyresearch\n\n[영상 2 · 국가 대항전]\n0–2s: "Which country hates traffic the most? 🇺🇸🇧🇷🇪🇸🇫🇷🇮🇹🇲🇽"\n2–10s: 화면에 지금까지 나라별 응답 수(대시보드 캡처)를 보여 주며 "So far Spain is ahead…"\n10–18s: "Help your country catch up — link in bio, 10 minutes, anonymous."\n\n[영상 3 · 한국 학생 브이로그]\n0–2s: "Korean students need your help 🙏"\n2–12s: 캠퍼스·지하철 장면 + "We're researching how the world gets around for our class project."\n12–20s: "If you've got 10 minutes, the survey is in my bio. 감사합니다!"\n\n해시태그 예: #carsoftiktok #carTok #commute #publictransport #urbanism #EV #koreanstudent\n스페인어: #autos #movilidad #transportepúblico · 포르투갈어: #carros #mobilidade #transportepúblico · 프랑스어: #voiture #mobilité · 이탈리아어: #auto #mobilità`,
+  } },
+];
+
+const main = document.getElementById("main"), toc = document.getElementById("toc");
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+let tocHTML = "";
+for (const b of BLOCKS) {
+  if (b.group) { tocHTML += `<span class="grp">${esc(b.group)}</span>`; continue; }
+  tocHTML += `<a href="#${b.id}">${esc(b.title)}</a>`;
+  const sec = document.createElement("section");
+  sec.className = "block"; sec.id = b.id;
+  let inner = `<header><h2>${esc(b.title)}</h2><span class="who">${esc(b.who)}</span></header><p class="how">${b.how}</p>`;
+  if (b.table) {
+    inner += `<div class="tblwrap"><table><thead><tr><th>어디에</th><th>링크</th><th></th></tr></thead><tbody>${b.table.map(([k, u], i) => `<tr><td>${esc(k)}</td><td><code id="${b.id}-${i}">${esc(u)}</code></td><td><button class="copy" type="button" data-copy="${b.id}-${i}">복사</button></td></tr>`).join("")}</tbody></table></div>`;
+  } else {
+    const langs = Object.keys(b.msgs);
+    inner += `${langs.length > 1 ? `<div class="tabs" role="tablist">${langs.map((l, i) => `<button type="button" role="tab" data-tab="${l}" aria-selected="${i === 0}">${LANG_NAMES[l]}</button>`).join("")}</div>` : ""}
+      <pre class="msg" id="${b.id}-msg"></pre><div class="row"><button class="copy" type="button" data-copy="${b.id}-msg">복사</button><span class="copied" hidden>복사했어요</span></div>`;
+  }
+  sec.innerHTML = inner;
+  main.appendChild(sec);
+  if (b.msgs) {
+    const pre = sec.querySelector("pre");
+    const show = (l) => { pre.textContent = b.msgs[l]; sec.querySelectorAll("[data-tab]").forEach((t) => t.setAttribute("aria-selected", t.dataset.tab === l)); };
+    sec.querySelectorAll("[data-tab]").forEach((t) => t.addEventListener("click", () => show(t.dataset.tab)));
+    show(Object.keys(b.msgs)[0]);
+  }
+}
+toc.innerHTML = tocHTML;
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest("[data-copy]"); if (!btn) return;
+  const el = document.getElementById(btn.dataset.copy); const text = el.textContent;
+  try { await navigator.clipboard.writeText(text); }
+  catch (err) { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+  const note = btn.parentElement.querySelector(".copied");
+  btn.textContent = "복사됨"; if (note) note.hidden = false;
+  setTimeout(() => { btn.textContent = "복사"; if (note) note.hidden = true; }, 1600);
+});
+</script>
+</body>
+</html>
