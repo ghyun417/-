@@ -183,11 +183,6 @@ svg .endlab { fill: var(--ink); font-family: var(--font-data); font-size: 13px; 
 .legend button[aria-pressed="true"] { background: var(--ink); color: var(--surface); font-weight: 600; }
 
 /* blue ocean */
-.seg { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.seg button { border: 0; background: var(--track); border-radius: 999px; padding: 5px 14px; cursor: pointer; font-size: 13px; }
-.seg button .num { color: var(--muted); font-size: 12px; margin-left: 2px; }
-.seg button[aria-pressed="true"] { background: var(--mauve-deep); color: #fff; font-weight: 600; }
-.seg button[aria-pressed="true"] .num { color: rgba(255, 255, 255, 0.8); }
 .analysis { margin: 0; padding: 14px 16px 14px 34px; background: color-mix(in srgb, var(--mauve) 10%, var(--surface)); border-radius: 14px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
 .analysis li::marker { color: var(--mauve-deep); }
 i.sw { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; }
@@ -638,31 +633,14 @@ function render() {
   if (N && N < 30) insights.push(`응답이 30건 미만이라 비율이 크게 흔들릴 수 있습니다. 해석은 참고용으로만 하세요.`);
 
   // ---- 블루오션 분석: 전략캔버스 + 구매자 효용지도
-  // 근거: Kim & Mauborgne(2005) 블루오션 전략, 박경민 외(2023) 연세경영연구 60(1) — 설문 평균으로 As-Is 전략캔버스를 그리고
-  //       구매자 효용지도를 고객/비고객 관점으로 나눠 작성한 방식을 따릅니다.
-  const SEG = hints.segments || {};
-  if (!state.seg) state.seg = {};
-  const segRows = (key) => {
-    const seg = SEG[key], id = state.seg[key] || "all";
-    if (!seg || id === "all") return rows;
-    const g = seg.groups.find((x) => x.id === id), ci = headers.indexOf(seg.col);
-    if (!g || ci < 0) return rows;
-    return rows.filter((r) => { const v = (r[ci] || "").trim(); if (!v) return false; const inn = g.values.includes(v); return g.not ? !inn : inn; });
-  };
-  const segButtons = (key) => {
-    const seg = SEG[key]; if (!seg) return "";
-    const cur = state.seg[key] || "all";
-    const ci = headers.indexOf(seg.col);
-    const count = (g) => g.id === "all" ? rows.length : rows.filter((r) => { const v = (r[ci] || "").trim(); if (!v) return false; const inn = g.values.includes(v); return g.not ? !inn : inn; }).length;
-    return `<div class="seg" role="group" aria-label="관점 고르기"><span class="muted small">관점</span>${seg.groups.map((g) => `<button type="button" data-seg="${key}" data-segid="${g.id}" aria-pressed="${g.id === cur}">${esc(g.label)} <span class="num">${count(g)}</span></button>`).join("")}</div>`;
-  };
+  // 근거: Kim & Mauborgne(2005) 블루오션 전략, 박경민 외(2023) 연세경영연구 60(1) — 전체 응답자의 설문 평균으로
+  //       As-Is 전략캔버스를 그리고, Q5 응답 비율로 구매자 효용지도를 채웁니다.
   const canvases = findCanvases(cls.grids);
   const inCanvas = new Set(canvases.flat());
   const blueCards = [];
   canvases.forEach((canvas, ci) => {
     const prefix = (canvas[0].name.match(/^(Q\d+)/) || [])[1];
-    const segKey = "canvas";
-    const sub = segRows(segKey);
+    const sub = rows;
     const labels = canvas[0].cols.map((c) => c.row);
     const stats = canvas.map((g) => g.cols.map((c) => numStats(sub.map((r) => (r[c.i] || "").trim()))));
     const means = stats.map((r) => r.map((s) => s.mean));
@@ -677,8 +655,8 @@ function render() {
     const ovGrid = ovName ? cls.grids.find((g) => g.name === ovName) : null;
     const ov = labels.map((l) => { const c = ovGrid && ovGrid.cols.find((x) => x.row === l); return c ? numStats(sub.map((r) => (r[c.i] || "").trim())) : { n: 0, mean: NaN }; });
     const allMeans = means.flat().filter((v) => !isNaN(v));
-    const body0 = segButtons(segKey);
-    if (!allMeans.length) { blueCards.push(card(title, 0, body0 + `<p class="muted">이 관점에 해당하는 응답이 아직 없습니다.</p>`, { wide: true, noChip: true })); return; }
+    const body0 = "";
+    if (!allMeans.length) { blueCards.push(card(title, 0, body0 + `<p class="muted">아직 평가 응답이 없습니다.</p>`, { wide: true, noChip: true })); return; }
     const lo = Math.min(...allMeans), hi = Math.max(...allMeans);
     const table = `<div class="tblwrap"><table><thead><tr><th>전략요소</th>${labels.map((l, i) => `<th><i class="sw" style="background:${SERIES[i % SERIES.length]}"></i>${esc(l)}</th>`).join("")}<th>차이</th></tr></thead><tbody>${canvas.map((g, gi) => {
       const ok = means[gi].filter((v) => !isNaN(v)); const rowMax = ok.length ? Math.max(...ok) : NaN; const spread = ok.length > 1 ? rowMax - Math.min(...ok) : NaN;
@@ -708,7 +686,7 @@ function render() {
     if (ovBest) lines.push(`전반적 평가는 <b>${esc(labels[ovBest.li])}</b>${josa(labels[ovBest.li], "이", "가")} 가장 높습니다(${fmt1(ovBest.s.mean)}점 / 10점).`);
     if (minN < 30) lines.push(`<span class="muted">평가한 사람이 30명보다 적은 대상이 있어(최소 ${minN}명) 아직은 참고용입니다.</span>`);
     insights.push(`${esc(title.replace(/\s*\(.*\)$/, ""))}: ${lines[0]}`);
-    const help = `Kim &amp; Mauborgne의 <b>전략캔버스</b>예요. 가로축은 경쟁 요소(전략요소), 세로축은 응답자가 매긴 제공 수준(1~5점 평균)이고, 대안마다 점을 이은 선이 <b>가치곡선</b>이에요. 박경민 외(2023)처럼 설문 평균으로 그린 <b>현재(As-Is) 캔버스</b>이고, 마지막 줄은 전반적 평가예요. 이름 버튼으로 선을 켜고 끌 수 있어요.`;
+    const help = `Kim &amp; Mauborgne의 <b>전략캔버스</b>예요. 가로축은 경쟁 요소(전략요소), 세로축은 응답자가 매긴 제공 수준(1~5점 평균)이고, 대안마다 점을 이은 선이 <b>가치곡선</b>이에요. 박경민 외(2023)처럼 설문 평균으로 그린 <b>현재(As-Is) 캔버스</b>이고, 마지막 줄은 전반적 평가예요. 전체 응답자 기준이고, 이름 버튼으로 선을 켜고 끌 수 있어요.`;
     blueCards.push(card(title, Math.max(...ns.flat()), body0 + legend + canvasSVG(canvas, labels, means, on) + `<ul class="analysis">${lines.map((l) => `<li>${l}</li>`).join("")}</ul>` + table, { wide: true, help, noChip: true, nLabel: `대안 ${labels.length}개 · 요소 ${canvas.length}개` }));
   });
 
@@ -717,7 +695,7 @@ function render() {
   const umGrid = UM ? cls.grids.find((g) => g.name === UM.grid) : null;
   if (umGrid) {
     inCanvas.add(umGrid);
-    const sub = segRows("utility");
+    const sub = rows;
     const code = (v) => String(v).trim().charAt(0);
     const stages = umGrid.cols.map((c, si) => {
       const vals = sub.map((r) => (r[c.i] || "").trim()).filter(Boolean);
@@ -743,23 +721,10 @@ function render() {
     if (painS.length > 1) lines.push(`불편을 겪은 비율이 가장 높은 단계는 <b>${esc(painS[0].s.label.replace(/^\d+\.\s*/, ""))}</b>(${Math.round(painS[0].p * 100)}%), 가장 낮은 단계는 <b>${esc(painS[painS.length - 1].s.label.replace(/^\d+\.\s*/, ""))}</b>(${Math.round(painS[painS.length - 1].p * 100)}%)입니다.`);
     const untouched = UM.levers.filter((lv, li) => stages.every((s) => !s.levers[li]));
     if (untouched.length) lines.push(`아무도 꼽지 않은 레버: ${untouched.map((lv) => esc(lv.name)).join(", ")}.`);
-    // 두 관점 비교 (논문의 전문의/일반인 관점 구분에 해당)
-    const segU = SEG.utility;
-    if (segU && (state.seg.utility || "all") === "all") {
-      const ci = headers.indexOf(segU.col);
-      const topFor = (g) => {
-        const rs = rows.filter((r) => { const v = (r[ci] || "").trim(); if (!v) return false; const inn = g.values.includes(v); return g.not ? !inn : inn; });
-        let best = null;
-        umGrid.cols.forEach((c, si) => { const ex = rs.map((r) => (r[c.i] || "").trim()).filter((v) => v && code(v) !== UM.skip); UM.levers.forEach((lv, li) => { const k = ex.filter((v) => lv.codes.includes(code(v))).length; const p = ex.length ? k / ex.length : 0; if (k && (!best || p > best.p)) best = { si, li, p, n: rs.length }; }); });
-        return best;
-      };
-      const parts = segU.groups.filter((g) => g.id !== "all").map((g) => ({ g, t: topFor(g) })).filter((x) => x.t);
-      if (parts.length === 2) lines.push(`관점별로 보면 ${parts.map((x) => `<b>${esc(x.g.short || x.g.label)}</b>(${x.t.n}명)는 <b>${esc(stages[x.t.si].label.replace(/^\d+\.\s*/, ""))}·${esc(UM.levers[x.t.li].name)}</b>(${Math.round(x.t.p * 100)}%)`).join(", ")}에서 가장 크게 막힙니다.`);
-    }
     if (Math.min(...stages.map((s) => s.n)) < 30) lines.push(`<span class="muted">단계별로 겪은 사람이 30명보다 적은 곳이 있어 아직은 참고용입니다.</span>`);
     if (lines[0]) insights.push(`구매자 효용지도: ${lines[0]}`);
-    const help = `Kim &amp; Mauborgne의 <b>구매자 효용지도</b>예요. 가로는 구매자 경험 6단계(구매→인도→사용→보완→유지보수→처분), 세로는 효용 레버예요. 칸 = 그 단계를 겪은 사람 중 그 불편을 <b>가장 큰 불편</b>으로 고른 비율이고, <b>진할수록</b> 효용이 막혀 있다는 뜻이에요. ✕는 가장 진한 3칸, ○는 절반 넘게 ‘불편 없음’이라 답한 단계예요. 논문(박경민 외, 2023)처럼 관점을 나눠 볼 수 있어요.`;
-    blueCards.push(card("구매자 효용지도 (Q5)", sub.length, segButtons("utility") + `<ul class="analysis">${lines.map((l) => `<li>${l}</li>`).join("")}</ul>` + table, { wide: true, help, noChip: true, nLabel: `응답 <span class="num">${sub.length}</span>명` }));
+    const help = `Kim &amp; Mauborgne의 <b>구매자 효용지도</b>예요. 가로는 구매자 경험 6단계(구매→인도→사용→보완→유지보수→처분), 세로는 효용 레버예요. 칸 = 그 단계를 겪은 사람 중 그 불편을 <b>가장 큰 불편</b>으로 고른 비율이고, <b>진할수록</b> 효용이 막혀 있다는 뜻이에요. ✕는 가장 진한 3칸, ○는 절반 넘게 ‘불편 없음’이라 답한 단계예요.`;
+    blueCards.push(card("구매자 효용지도 (Q5)", sub.length, `<ul class="analysis">${lines.map((l) => `<li>${l}</li>`).join("")}</ul>` + table, { wide: true, help, noChip: true, nLabel: `응답 <span class="num">${sub.length}</span>명` }));
   }
   const canvasCards = [];
 
@@ -950,7 +915,6 @@ function bindApp() {
   on("#fClear", "click", () => { state.filterCol = ""; state.filterVal = ""; render(); });
   on("#insightHide", "click", () => { state.hideInsight = true; prefs("hideInsight", true); render(); });
   on("#insightShow", "click", () => { state.hideInsight = false; prefs("hideInsight", false); render(); });
-  document.querySelectorAll("[data-seg]").forEach((b) => b.addEventListener("click", () => { state.seg[b.dataset.seg] = b.dataset.segid; render(); }));
   on("#cA", "change", (e) => { state.crossA = e.target.value; render(); });
   on("#cB", "change", (e) => { state.crossB = e.target.value; render(); });
   document.querySelectorAll("[data-series]").forEach((b) => b.addEventListener("click", () => {
