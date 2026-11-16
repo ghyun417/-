@@ -1,0 +1,754 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>설문 응답 현황</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: 상단 KPI 띠 → 응답 추이 → 자동 분석 요약 → 문항별 카드 그리드. 발표 모드에서는 카드 한 장씩 크게. */
+:root {
+  --bg: #f3f5f6;
+  --surface: #ffffff;
+  --ink: #17212b;
+  --muted: #5d6b78;
+  --line: #dde3e8;
+  --track: #e9eef1;
+  --accent: #1b6b8f;
+  --accent-soft: #d5e7f0;
+  --signal: #c2621b;
+  --good: #2c7a4b;
+  --warn: #a8670f;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11171c; --surface: #19222a; --ink: #e6ecf0; --muted: #94a3af; --line: #2a3640;
+    --track: #24303a; --accent: #5fb0d6; --accent-soft: #1f3a4a; --signal: #e8914e; --good: #5cc28a; --warn: #e0a54a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11171c; --surface: #19222a; --ink: #e6ecf0; --muted: #94a3af; --line: #2a3640;
+  --track: #24303a; --accent: #5fb0d6; --accent-soft: #1f3a4a; --signal: #e8914e; --good: #5cc28a; --warn: #e0a54a;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 48px;
+}
+.wrap { max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 17px; font-weight: 700; }
+h3 { font-size: 15px; font-weight: 600; }
+.num { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+button, select { font: inherit; color: inherit; }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* header */
+.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 20px; }
+.top .meta { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.live { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.live i { width: 8px; height: 8px; border-radius: 50%; background: var(--good); display: inline-block; }
+.live.err i { background: var(--signal); }
+@media (prefers-reduced-motion: no-preference) { .live.pulse i { animation: pulse 1.2s ease-out 2; } }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--good) 60%, transparent); } 100% { box-shadow: 0 0 0 10px transparent; } }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 14px; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tab { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 6px 14px; cursor: pointer; font-size: 14px; }
+.tab[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.banner { border: 1px dashed var(--warn); color: var(--ink); background: color-mix(in srgb, var(--warn) 10%, var(--surface)); padding: 10px 14px; border-radius: 10px; font-size: 14px; }
+.banner.err { border-color: var(--signal); background: color-mix(in srgb, var(--signal) 10%, var(--surface)); }
+
+/* KPI strip */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.kpi { background: var(--surface); padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.kpi .label { font-size: 12px; color: var(--muted); letter-spacing: 0.04em; }
+.kpi .value { font-family: var(--font-data); font-size: 28px; font-weight: 600; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.kpi .sub { font-size: 12px; color: var(--muted); }
+.kpi.hero .value { color: var(--accent); font-size: 36px; }
+
+/* filter bar */
+.filters { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; font-size: 14px; }
+.filters select { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 5px 8px; max-width: 100%; }
+
+/* cards */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; align-items: start; }
+@media (max-width: 480px) { .grid { grid-template-columns: 1fr; } }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.card.wide { grid-column: 1 / -1; }
+.card header { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.card header .n { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.chip { display: inline-block; font-size: 11px; letter-spacing: 0.04em; padding: 2px 8px; border-radius: 999px; background: var(--track); color: var(--muted); white-space: nowrap; }
+.chip.warn { background: color-mix(in srgb, var(--warn) 18%, var(--surface)); color: var(--warn); }
+.takeaway { font-size: 14px; margin: 0; }
+.takeaway b { color: var(--accent); }
+
+/* bars */
+.bars { display: flex; flex-direction: column; gap: 7px; }
+.bar { display: grid; grid-template-columns: minmax(0, 11em) minmax(0, 1fr) 6.6em; gap: 10px; align-items: center; font-size: 13.5px; }
+.bar .lab { overflow-wrap: anywhere; line-height: 1.3; }
+.bar .trk { height: 14px; background: var(--track); border-radius: 3px; overflow: hidden; }
+.bar .fill { height: 100%; background: color-mix(in srgb, var(--accent) 55%, var(--track)); border-radius: 3px; }
+.bar.top .fill { background: var(--accent); }
+.bar.top .lab { font-weight: 600; }
+.bar .val { text-align: right; font-family: var(--font-data); font-size: 12.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bar .val span { color: var(--muted); }
+@media (max-width: 480px) { .bar { grid-template-columns: minmax(0, 7.5em) minmax(0, 1fr) 6.2em; } }
+
+/* tables */
+.tblwrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; white-space: normal; min-width: 8em; }
+thead th { font-weight: 600; color: var(--muted); font-size: 12px; vertical-align: bottom; white-space: normal; }
+td.heat { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+tr.hl td:first-child { font-weight: 700; color: var(--accent); }
+.meanbar { display: inline-block; height: 8px; background: var(--accent); border-radius: 2px; vertical-align: middle; margin-left: 6px; }
+
+/* svg charts */
+svg text { fill: var(--muted); font-family: var(--font-body); font-size: 11px; }
+svg .ax { stroke: var(--line); }
+svg .area { fill: var(--accent-soft); }
+svg .ln { stroke: var(--accent); fill: none; stroke-width: 2.2; }
+svg .dbar { fill: color-mix(in srgb, var(--accent) 45%, var(--track)); }
+svg .dot { fill: var(--accent); }
+svg .endlab { fill: var(--ink); font-family: var(--font-data); font-size: 12px; font-weight: 600; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px; }
+.legend button { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 3px 10px; cursor: pointer; font-size: 12.5px; }
+.legend button i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.legend button[aria-pressed="true"] { border-color: var(--ink); font-weight: 600; }
+
+/* insights */
+.insights { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.insights li { padding-left: 14px; position: relative; font-size: 14.5px; }
+.insights li::before { content: ""; position: absolute; left: 0; top: 0.62em; width: 6px; height: 6px; border-radius: 1px; background: var(--accent); }
+.texts { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; max-height: 340px; overflow-y: auto; }
+.texts li { border-left: 3px solid var(--accent-soft); padding: 2px 0 2px 10px; font-size: 14px; overflow-wrap: anywhere; }
+.texts li time { display: block; font-size: 11.5px; color: var(--muted); }
+.section-title { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+
+/* presentation mode */
+.present-nav { display: none; }
+body.present { padding-block: 24px; }
+body.present .hide-present { display: none !important; }
+body.present .grid { display: block; }
+body.present .card { display: none; font-size: 19px; padding: 32px; }
+body.present .card.on { display: flex; }
+body.present .card h3 { font-size: 26px; }
+body.present .bar { font-size: 18px; grid-template-columns: minmax(0, 13em) minmax(0, 1fr) 8em; }
+body.present .bar .trk { height: 22px; }
+body.present .bar .val { font-size: 16px; }
+body.present .takeaway, body.present .insights li { font-size: 20px; }
+body.present table { font-size: 16px; }
+body.present svg text { font-size: 13px; }
+body.present .present-nav { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.toast { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 14px; }
+.howto { font-size: 14px; }
+.howto ol { margin: 6px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+.howto input { width: 100%; border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 7px 10px; font: inherit; color: inherit; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.row > input { flex: 1 1 240px; min-width: 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+      <h1 id="title">설문 응답 현황</h1>
+      <div class="tabs hide-present" id="tabs" role="tablist"></div>
+    </div>
+    <div class="meta hide-present">
+      <span class="live" id="live"><i></i><span id="liveText">불러오는 중</span></span>
+      <button class="btn" id="refreshBtn" type="button">지금 새로고침</button>
+      <button class="btn primary" id="presentBtn" type="button">발표 모드</button>
+    </div>
+  </div>
+  <div id="banner" class="hide-present"></div>
+  <div class="present-nav" id="presentNav">
+    <button class="btn" id="prevBtn" type="button">← 이전</button>
+    <span class="muted small num" id="slideNo"></span>
+    <div class="row"><button class="btn" id="nextBtn" type="button">다음 →</button><button class="btn" id="exitBtn" type="button">발표 끝내기 (Esc)</button></div>
+  </div>
+  <div id="app"></div>
+</div>
+<div id="toast" class="toast" hidden></div>
+
+<script src="config.js"></script>
+<script>
+"use strict";
+/* ------------------------------------------------------------------
+   설정
+------------------------------------------------------------------ */
+const CFG = Object.assign({ title: "설문 응답 현황", sheets: [{ name: "응답", csv: "" }], endDate: "", goal: 0, refreshSeconds: 60 }, window.DASHBOARD_CONFIG || {});
+const params = new URLSearchParams(location.search);
+if (params.get("csv")) CFG.sheets = [{ name: params.get("name") || "응답", csv: params.get("csv") }];
+const LS_KEY = "survey-dash-links";
+function savedLinks() { try { return JSON.parse(localStorage.getItem(LS_KEY) || "{}"); } catch (e) { return {}; } }
+function saveLink(i, url) { try { const s = savedLinks(); s[i] = url; localStorage.setItem(LS_KEY, JSON.stringify(s)); } catch (e) {} }
+
+const state = { sheet: 0, data: {}, filterCol: "", filterVal: "", crossA: "", crossB: "", canvasOn: null, slide: 0, lastCount: {} };
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const pct = (a, b) => (b ? Math.round((a / b) * 1000) / 10 : 0);
+const fmt1 = (x) => (Math.round(x * 100) / 100).toFixed(2);
+document.title = CFG.title; $("#title").textContent = CFG.title;
+
+/* ------------------------------------------------------------------
+   CSV 읽기
+------------------------------------------------------------------ */
+function parseCSV(t) {
+  t = t.replace(/^﻿/, "");
+  const rows = []; let row = [], f = "", q = false;
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    if (q) { if (c === '"') { if (t[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === ",") { row.push(f); f = ""; }
+    else if (c === "\n") { row.push(f); rows.push(row); row = []; f = ""; }
+    else if (c !== "\r") f += c;
+  }
+  if (f !== "" || row.length) { row.push(f); rows.push(row); }
+  return rows.filter((r) => r.some((v) => v.trim() !== ""));
+}
+// 일반 시트 주소를 넣어도 CSV 주소로 바꿔 줍니다.
+function toCsvUrl(u) {
+  u = (u || "").trim(); if (!u) return "";
+  if (/\/pub\?|output=csv|format=csv|tqx=out:csv/.test(u)) return u;
+  const m = u.match(/docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+  if (m && m[1] !== "e") { const g = (u.match(/gid=(\d+)/) || [])[1] || "0"; return `https://docs.google.com/spreadsheets/d/${m[1]}/gviz/tq?tqx=out:csv&gid=${g}`; }
+  if (/\/pubhtml/.test(u)) return u.replace("/pubhtml", "/pub").replace(/([?&])output=[^&]*/, "$1") + (u.includes("?") ? "&" : "?") + "output=csv";
+  return u;
+}
+
+/* ------------------------------------------------------------------
+   날짜 읽기 (구글 시트 한국어 형식 포함)
+------------------------------------------------------------------ */
+function parseDate(s) {
+  s = String(s).trim(); if (!s) return null; let m;
+  if ((m = s.match(/^(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\.?\s*(오전|오후|AM|PM)?\s*(\d{1,2}):(\d{2})(?::(\d{2}))?/i))) {
+    let h = +m[5]; const ap = (m[4] || "").toUpperCase();
+    if ((ap === "오후" || ap === "PM") && h < 12) h += 12; if ((ap === "오전" || ap === "AM") && h === 12) h = 0;
+    return new Date(+m[1], m[2] - 1, +m[3], h, +m[6], +(m[7] || 0));
+  }
+  if (/\d{4}-\d{2}-\d{2}T.*(Z|[+-]\d{2}:?\d{2})$/.test(s)) { const d = new Date(s); return isNaN(d) ? null : d; }
+  if ((m = s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})(?:[ T]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/))) return new Date(+m[1], m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+  if ((m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/))) return new Date(+m[3], m[1] - 1, +m[2], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+  if ((m = s.match(/^Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)$/))) return new Date(+m[1], +m[2], +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+  return null;
+}
+const dayKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+/* ------------------------------------------------------------------
+   열 종류 자동 판별
+------------------------------------------------------------------ */
+const NA_RE = /^(n\/?a|na|해당\s*없음|판단\s*어려움|모름|-|응답하지 않음)$/i;
+const isNum = (v) => /^-?\d+(\.\d+)?$/.test(String(v).trim());
+
+function classify(headers, rows) {
+  const cols = headers.map((h, i) => ({ i, name: h, vals: rows.map((r) => (r[i] || "").trim()) }));
+  const out = { time: null, singles: [], multis: [], numerics: [], texts: [], grids: [] };
+  const gridMap = new Map();
+  for (const c of cols) {
+    const ne = c.vals.filter((v) => v !== "");
+    if (!c.name.trim() || ne.length === 0) continue;
+    const dates = ne.filter((v) => parseDate(v)).length;
+    if (!out.time && (dates / ne.length > 0.9) && (/타임스탬프|timestamp|시간|일시|제출|날짜|date|time/i.test(c.name) || c.i === 0)) { out.time = c; continue; }
+    if (/^(응답자\s*)?id$|아이디|이메일|email|응답자 id/i.test(c.name.trim()) && new Set(ne).size > ne.length * 0.8) continue;
+    const g = c.name.match(/^(.*?)\s*\[(.+?)\]\s*$/);
+    if (g) { const key = g[1].trim(); if (!gridMap.has(key)) gridMap.set(key, []); gridMap.get(key).push(Object.assign(c, { row: g[2].trim() })); continue; }
+    const real = ne.filter((v) => !NA_RE.test(v));
+    const numShare = real.length ? real.filter(isNum).length / real.length : 0;
+    const uniq = new Set(ne);
+    if (real.length && numShare > 0.9) {
+      const nums = real.filter(isNum).map(Number);
+      c.scale = new Set(nums).size <= 11 && Math.min(...nums) >= 0 && Math.max(...nums) <= 10 && nums.every(Number.isInteger);
+      out.numerics.push(c); continue;
+    }
+    const withComma = ne.filter((v) => v.includes(", ")).length;
+    if (withComma >= 2) {
+      const tokens = new Set(ne.flatMap((v) => v.split(", ").map((s) => s.trim())));
+      if (tokens.size < uniq.size && tokens.size <= 30) { out.multis.push(c); continue; }
+    }
+    const avgLen = ne.reduce((a, v) => a + v.length, 0) / ne.length;
+    if (/의견|자유|서술|적어|comment|feedback|바뀌면|제안/i.test(c.name) && uniq.size > 3) { out.texts.push(c); continue; }
+    if (avgLen > 15 && uniq.size >= ne.length * 0.8 && ne.length >= 2) { out.texts.push(c); continue; }
+    if ((uniq.size > 20 && uniq.size > ne.length * 0.4) || (avgLen > 28 && uniq.size > ne.length * 0.6 && ne.length >= 3)) { out.texts.push(c); continue; }
+    out.singles.push(c);
+  }
+  for (const [key, cs] of gridMap) {
+    if (cs.length === 1) { const c = cs[0]; c.name = `${key} [${c.row}]`; out.singles.push(c); continue; }
+    const all = cs.flatMap((c) => c.vals).filter((v) => v && !NA_RE.test(v));
+    const numeric = all.length > 0 && all.filter(isNum).length / all.length > 0.9;
+    const nums = numeric ? all.filter(isNum).map(Number) : [];
+    out.grids.push({ name: key, cols: cs, numeric, min: nums.length ? Math.min(...nums) : 0, max: nums.length ? Math.max(...nums) : 0 });
+  }
+  return out;
+}
+
+/* ------------------------------------------------------------------
+   집계
+------------------------------------------------------------------ */
+function countValues(vals, multi) {
+  const m = new Map(); let n = 0;
+  for (const v of vals) {
+    if (!v) continue; n++;
+    const parts = multi ? v.split(", ").map((s) => s.trim()).filter(Boolean) : [v];
+    for (const p of parts) m.set(p, (m.get(p) || 0) + 1);
+  }
+  const items = [...m.entries()].map(([k, c]) => ({ k, c })).sort((a, b) => b.c - a.c);
+  return { n, items };
+}
+function sortScaleItems(items) {
+  const allNum = items.every((x) => isNum(x.k));
+  return allNum ? items.slice().sort((a, b) => +a.k - +b.k) : items;
+}
+function numStats(vals) {
+  const xs = vals.filter((v) => v && isNum(v)).map(Number);
+  const na = vals.filter((v) => v && NA_RE.test(v)).length;
+  if (!xs.length) return { n: 0, na, mean: NaN };
+  const s = xs.slice().sort((a, b) => a - b);
+  return { n: xs.length, na, mean: xs.reduce((a, b) => a + b, 0) / xs.length, median: s[Math.floor(s.length / 2)], min: s[0], max: s[s.length - 1], xs };
+}
+
+/* ------------------------------------------------------------------
+   그리기 도우미
+------------------------------------------------------------------ */
+function barsHTML(items, denom, opts = {}) {
+  const max = Math.max(1, ...items.map((x) => x.c));
+  const topC = Math.max(...items.map((x) => x.c));
+  return `<div class="bars">${items.map((x) => {
+    const p = pct(x.c, denom);
+    return `<div class="bar${x.c === topC && !opts.noTop ? " top" : ""}"><span class="lab">${esc(x.k)}</span><span class="trk"><span class="fill" style="width:${(x.c / max) * 100}%;display:block"></span></span><span class="val">${p}% <span>(${x.c})</span></span></div>`;
+  }).join("")}</div>`;
+}
+function heatColor(t) { // 0..1 → 배경 섞기 비율
+  const p = Math.round(6 + t * 64);
+  return `background: color-mix(in srgb, var(--accent) ${p}%, var(--surface)); color: ${t > 0.55 ? "var(--surface)" : "var(--ink)"}`;
+}
+function sampleChip(n) { return n < 30 ? `<span class="chip warn" title="응답이 30건 미만이면 결과가 크게 흔들릴 수 있습니다">표본 적음</span>` : ""; }
+function card(title, n, body, opts = {}) {
+  return `<section class="card${opts.wide ? " wide" : ""}"><header><h3>${esc(title)}</h3><span class="n">${opts.nLabel || `응답 <span class="num">${n}</span>건`} ${opts.noChip ? "" : sampleChip(n)}</span></header>${opts.take ? `<p class="takeaway">${opts.take}</p>` : ""}${body}</section>`;
+}
+function wrapLabel(s, maxLen) {
+  const words = String(s).split(/(?<=[·\s\/])/); const lines = [""];
+  for (const w of words) { if ((lines[lines.length - 1] + w).length > maxLen && lines[lines.length - 1]) lines.push(w.trim()); else lines[lines.length - 1] += w; }
+  return lines.slice(0, 3);
+}
+const SERIES = ["#1b6b8f", "#c2621b", "#2c7a4b", "#7a4fa3", "#b0365c", "#4f6d1f", "#8a6a12", "#3d5a99"];
+
+/* ------------------------------------------------------------------
+   응답 추이 차트
+------------------------------------------------------------------ */
+function timelineSVG(dates) {
+  if (!dates.length) return `<p class="muted small">제출 시각 열을 찾지 못해 추이를 그릴 수 없습니다.</p>`;
+  const counts = new Map(); dates.forEach((d) => counts.set(dayKey(d), (counts.get(dayKey(d)) || 0) + 1));
+  const first = new Date(Math.min(...dates)); first.setHours(0, 0, 0, 0);
+  const lastD = new Date(Math.max(Date.now(), ...dates)); lastD.setHours(0, 0, 0, 0);
+  const days = []; for (let d = new Date(first); d <= lastD; d.setDate(d.getDate() + 1)) days.push(new Date(d));
+  let cum = 0; const pts = days.map((d) => { const c = counts.get(dayKey(d)) || 0; cum += c; return { d, c, cum }; });
+  const W = 900, H = 260, L = 40, R = 56, T = 16, B = 34, BH = 46;
+  const iw = W - L - R, ih = H - T - B - BH - 10;
+  const maxCum = Math.max(1, cum), maxC = Math.max(1, ...pts.map((p) => p.c));
+  const x = (i) => L + (pts.length === 1 ? iw / 2 : (i / (pts.length - 1)) * iw);
+  const y = (v) => T + ih - (v / maxCum) * ih;
+  const ticks = niceTicks(maxCum, 4);
+  const line = pts.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p.cum).toFixed(1)}`).join("");
+  const area = `${line}L${x(pts.length - 1).toFixed(1)},${y(0)}L${x(0).toFixed(1)},${y(0)}Z`;
+  const bw = Math.max(2, Math.min(28, (iw / pts.length) * 0.6));
+  const by0 = H - B;
+  const step = Math.ceil(pts.length / 10);
+  const last = pts[pts.length - 1];
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="누적 응답 ${cum}건 추이">
+    ${ticks.map((t) => `<line class="ax" x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}"/><text x="${L - 6}" y="${y(t) + 4}" text-anchor="end">${t}</text>`).join("")}
+    <path class="area" d="${area}"/><path class="ln" d="${line}"/>
+    <circle class="dot" cx="${x(pts.length - 1)}" cy="${y(last.cum)}" r="4"/>
+    <text class="endlab" x="${x(pts.length - 1) + 8}" y="${y(last.cum) + 4}">${last.cum}</text>
+    <text x="${W - R}" y="${by0 - BH + 4}" text-anchor="end">일별 응답 (최대 ${maxC}건)</text>
+    ${pts.map((p, i) => `<rect class="dbar" x="${(x(i) - bw / 2).toFixed(1)}" y="${(by0 - (p.c / maxC) * (BH - 12)).toFixed(1)}" width="${bw.toFixed(1)}" height="${((p.c / maxC) * (BH - 12)).toFixed(1)}"><title>${dayKey(p.d)}: ${p.c}건</title></rect>`).join("")}
+    <line class="ax" x1="${L}" x2="${W - R}" y1="${by0}" y2="${by0}"/>
+    ${pts.map((p, i) => (i % step === 0 || i === pts.length - 1) ? `<text x="${x(i)}" y="${H - 14}" text-anchor="middle">${p.d.getMonth() + 1}/${p.d.getDate()}</text>` : "").join("")}
+  </svg>`;
+}
+function niceTicks(max, n) {
+  const raw = max / n, mag = Math.pow(10, Math.floor(Math.log10(raw))), st = [1, 2, 5, 10].map((k) => k * mag).find((k) => k >= raw) || mag * 10;
+  const out = []; for (let v = 0; v <= max + 1e-9; v += st) out.push(Math.round(v)); return out;
+}
+
+/* ------------------------------------------------------------------
+   전략캔버스 (같은 비교 대상을 여러 요소로 평가한 표가 있을 때)
+------------------------------------------------------------------ */
+function findCanvas(grids) {
+  const numeric = grids.filter((g) => g.numeric && !/전반|overall|종합|만족/i.test(g.name));
+  const byLabels = new Map();
+  for (const g of numeric) { const key = g.cols.map((c) => c.row).join("|"); if (!byLabels.has(key)) byLabels.set(key, []); byLabels.get(key).push(g); }
+  let best = null; for (const gs of byLabels.values()) if (gs.length >= 2 && (!best || gs.length > best.length)) best = gs;
+  return best;
+}
+function canvasSVG(groups, labels, means, on) {
+  const W = 900, H = 330, L = 60, R = 52, T = 14, B = 64;
+  const iw = W - L - R, ih = H - T - B;
+  const lo = Math.min(1, ...groups.flatMap((g, gi) => labels.map((_, li) => means[gi][li]).filter((v) => !isNaN(v))));
+  const hi = Math.max(5, ...groups.flatMap((g, gi) => labels.map((_, li) => means[gi][li]).filter((v) => !isNaN(v))));
+  const x = (i) => L + (groups.length === 1 ? iw / 2 : (i / (groups.length - 1)) * iw);
+  const y = (v) => T + ih - ((v - lo) / (hi - lo)) * ih;
+  const ticks = []; for (let v = Math.ceil(lo); v <= hi; v++) ticks.push(v);
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="요소별 평균 점수 비교">`;
+  s += ticks.map((t) => `<line class="ax" x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}"/><text x="${L - 8}" y="${y(t) + 4}" text-anchor="end">${t}</text>`).join("");
+  s += groups.map((g, i) => { const ls = wrapLabel(g.name.replace(/^II\s*-?\s*\d+\s*/, ""), 7); return `<text x="${x(i)}" y="${H - B + 18}" text-anchor="middle">${ls.map((l, k) => `<tspan x="${x(i)}" dy="${k ? 14 : 0}">${esc(l)}</tspan>`).join("")}</text>`; }).join("");
+  const order = labels.map((_, li) => li).sort((a, b) => (on.has(a) ? 1 : 0) - (on.has(b) ? 1 : 0));
+  for (const li of order) {
+    const active = on.has(li), col = SERIES[li % SERIES.length];
+    let d = "", pen = false;
+    groups.forEach((g, gi) => { const v = means[gi][li]; if (isNaN(v)) { pen = false; return; } d += `${pen ? "L" : "M"}${x(gi).toFixed(1)},${y(v).toFixed(1)}`; pen = true; });
+    s += `<path d="${d}" fill="none" stroke="${active ? col : "var(--line)"}" stroke-width="${active ? 2.6 : 1.4}"/>`;
+    if (active) s += groups.map((g, gi) => isNaN(means[gi][li]) ? "" : `<circle cx="${x(gi)}" cy="${y(means[gi][li])}" r="4" fill="${col}"><title>${esc(labels[li])} · ${esc(g.name)}: ${fmt1(means[gi][li])}</title></circle>`).join("");
+  }
+  return s + `</svg>`;
+}
+
+/* ------------------------------------------------------------------
+   화면 구성
+------------------------------------------------------------------ */
+function render() {
+  const D = state.data[state.sheet];
+  const app = $("#app");
+  if (!D) { app.innerHTML = `<p class="muted">불러오는 중…</p>`; return; }
+  if (D.error && !D.headers) { app.innerHTML = setupHTML(D.error); bindSetup(); return; }
+
+  const { headers } = D;
+  let rows = D.rows;
+  const cls0 = classify(headers, rows);
+  // 필터
+  const filterable = cls0.singles.filter((c) => countValues(c.vals).items.length <= 15);
+  if (state.filterCol && state.filterVal) { const fi = headers.indexOf(state.filterCol); if (fi >= 0) rows = rows.filter((r) => (r[fi] || "").trim() === state.filterVal); }
+  const cls = rows === D.rows ? cls0 : classify(headers, rows);
+  const N = rows.length;
+  const dates = cls.time ? cls.time.vals.map(parseDate).filter(Boolean) : [];
+
+  // ---- KPI
+  const now = new Date(); const today = dayKey(now);
+  const todayN = dates.filter((d) => dayKey(d) === today).length;
+  const firstD = dates.length ? new Date(Math.min(...dates)) : null;
+  const lastD = dates.length ? new Date(Math.max(...dates)) : null;
+  const elapsedDays = firstD ? Math.max(1, (now - firstD) / 864e5) : 0;
+  const perDay = firstD ? N / elapsedDays : 0;
+  const end = CFG.endDate ? new Date(CFG.endDate + "T23:59:59") : null;
+  const daysLeft = end ? Math.max(0, Math.ceil((end - now) / 864e5)) : null;
+  const projected = end && firstD ? Math.round(N + perDay * Math.max(0, (end - now) / 864e5)) : null;
+  const ago = lastD ? timeAgo(lastD) : "-";
+  let kpis = `<div class="kpis">
+    <div class="kpi hero"><span class="label">총 응답</span><span class="value">${N.toLocaleString()}</span><span class="sub">${state.filterVal ? `필터 적용 · 전체 ${D.rows.length}건` : CFG.goal ? `목표 ${CFG.goal}건의 ${pct(N, CFG.goal)}%` : "건"}</span></div>
+    <div class="kpi"><span class="label">오늘</span><span class="value">+${todayN}</span><span class="sub">${now.getMonth() + 1}월 ${now.getDate()}일</span></div>
+    <div class="kpi"><span class="label">하루 평균</span><span class="value">${perDay ? perDay.toFixed(1) : "-"}</span><span class="sub">첫 응답 이후</span></div>
+    <div class="kpi"><span class="label">마지막 응답</span><span class="value" style="font-size:22px">${ago}</span><span class="sub">${lastD ? `${lastD.getMonth() + 1}/${lastD.getDate()} ${String(lastD.getHours()).padStart(2, "0")}:${String(lastD.getMinutes()).padStart(2, "0")}` : ""}</span></div>
+    ${end ? `<div class="kpi"><span class="label">마감까지</span><span class="value">D-${daysLeft}</span><span class="sub">${CFG.endDate.slice(5).replace("-", "/")} 마감</span></div>` : ""}
+    ${projected != null ? `<div class="kpi"><span class="label">마감 시 예상</span><span class="value">≈${projected}</span><span class="sub">지금 속도 유지 시</span></div>` : ""}
+  </div>`;
+
+  // ---- filter + cross controls
+  const opt = (v, cur, label) => `<option value="${esc(v)}"${v === cur ? " selected" : ""}>${esc(label ?? v)}</option>`;
+  const fcVals = state.filterCol ? countValues(cls0.singles.find((c) => c.name === state.filterCol)?.vals || []).items : [];
+  const filters = filterable.length ? `<div class="filters hide-present"><span class="muted">응답자 거르기</span>
+    <select id="fCol" aria-label="거를 문항">${opt("", state.filterCol, "전체 응답자")}${filterable.map((c) => opt(c.name, state.filterCol)).join("")}</select>
+    ${state.filterCol ? `<select id="fVal" aria-label="거를 값">${opt("", state.filterVal, "값 선택")}${fcVals.map((x) => opt(x.k, state.filterVal, `${x.k} (${x.c})`)).join("")}</select>` : ""}
+    ${state.filterVal ? `<button class="btn" id="fClear" type="button">필터 해제</button>` : ""}</div>` : "";
+
+  // ---- cards
+  const cards = [];
+  cards.push(card("응답 추이", N, timelineSVG(dates), { wide: true, noChip: true, nLabel: `누적 <span class="num">${N}</span>건`, take: perDay ? `하루 평균 <b>${perDay.toFixed(1)}건</b>씩 들어오고 있습니다${projected != null ? `. 이 속도면 마감일까지 약 <b>${projected}건</b>이 모입니다.` : "."}` : "" }));
+
+  const insights = [];
+  if (N) insights.push(`지금까지 <b>${N}명</b>이 응답했습니다${todayN ? ` (오늘 ${todayN}명)` : ""}.`);
+  if (N && N < 30) insights.push(`응답이 30건 미만이라 비율이 크게 흔들릴 수 있습니다. 해석은 참고용으로만 하세요.`);
+
+  // 전략캔버스
+  const canvas = findCanvas(cls.grids);
+  const canvasSet = new Set(canvas || []);
+  if (canvas) {
+    const labels = canvas[0].cols.map((c) => c.row);
+    const means = canvas.map((g) => g.cols.map((c) => numStats(c.vals).mean));
+    const ns = canvas.map((g) => g.cols.map((c) => numStats(c.vals).n));
+    if (!state.canvasOn) state.canvasOn = new Set([0]);
+    const on = state.canvasOn;
+    const legend = `<div class="legend">${labels.map((l, i) => `<button type="button" data-series="${i}" aria-pressed="${on.has(i)}"><i style="background:${SERIES[i % SERIES.length]}"></i>${esc(l)}</button>`).join("")}</div>`;
+    const allMeans = means.flat().filter((v) => !isNaN(v));
+    const lo = Math.min(...allMeans), hi = Math.max(...allMeans);
+    const table = `<div class="tblwrap"><table><thead><tr><th>요소</th>${labels.map((l) => `<th>${esc(l)}</th>`).join("")}</tr></thead><tbody>${canvas.map((g, gi) => {
+      const rowMax = Math.max(...means[gi].filter((v) => !isNaN(v)));
+      return `<tr><td>${esc(g.name)}</td>${means[gi].map((v, li) => isNaN(v) ? `<td class="muted">-</td>` : `<td class="heat" style="${heatColor(hi > lo ? (v - lo) / (hi - lo) : 0.5)}" title="응답 ${ns[gi][li]}건">${fmt1(v)}${v === rowMax ? " ▲" : ""}</td>`).join("")}</tr>`;
+    }).join("")}</tbody></table></div><p class="muted small">칸 = 평균 점수(N/A 제외). ▲ = 그 요소에서 가장 높은 대상. 칸에 마우스를 올리면 응답 수가 보입니다.</p>`;
+    // 기준 대상(첫 번째)의 순위
+    const ref = labels[0];
+    const wins = canvas.filter((g, gi) => { const v = means[gi][0]; return !isNaN(v) && v === Math.max(...means[gi].filter((x) => !isNaN(x))); }).length;
+    const above = canvas.filter((g, gi) => { const v = means[gi][0]; const avg = means[gi].filter((x) => !isNaN(x)); return !isNaN(v) && v >= avg.reduce((a, b) => a + b, 0) / avg.length; }).length;
+    const gaps = canvas.map((g, gi) => ({ name: g.name, gap: means[gi][0] - Math.max(...means[gi].slice(1).filter((x) => !isNaN(x))) })).filter((x) => !isNaN(x.gap)).sort((a, b) => a.gap - b.gap);
+    const take = `<b>${esc(ref)}</b>은(는) ${canvas.length}개 요소 중 <b>${wins}개</b>에서 1위, <b>${above}개</b>에서 평균 이상입니다.${gaps.length ? ` 가장 뒤처진 요소는 <b>${esc(gaps[0].name)}</b>(1위와 ${fmt1(Math.abs(Math.min(0, gaps[0].gap)))}점 차)입니다.` : ""}`;
+    insights.push(take);
+    cards.push(card("요소별 평균 비교 (전략캔버스)", Math.max(...ns.flat()), legend + canvasSVG(canvas, labels, means, on) + table, { wide: true, take, nLabel: `대상 ${labels.length}개 × 요소 ${canvas.length}개` }));
+  }
+
+  // 표형 문항 (캔버스에 들어가지 않은 것)
+  for (const g of cls.grids) {
+    if (canvasSet.has(g)) continue;
+    const rowsLbl = g.cols.map((c) => c.row);
+    const respN = rows.filter((r) => g.cols.some((c) => (r[c.i] || "").trim())).length;
+    const rankRows = rowsLbl.every((l) => /^\d+\s*(순위|위)$|^(1st|2nd|3rd|\d+th)$/i.test(l));
+    if (g.numeric) {
+      const st = g.cols.map((c) => ({ row: c.row, ...numStats(c.vals) }));
+      const valid = st.filter((s) => s.n);
+      const best = valid.slice().sort((a, b) => b.mean - a.mean)[0];
+      const worst = valid.slice().sort((a, b) => a.mean - b.mean)[0];
+      const top = Math.max(g.max, 5);
+      const body = `<div class="tblwrap"><table><thead><tr><th>대상</th><th>평균</th><th></th><th>응답</th><th>N/A</th></tr></thead><tbody>${st.map((s) => `<tr${s === best ? ' class="hl"' : ""}><td>${esc(s.row)}</td><td class="heat">${s.n ? fmt1(s.mean) : "-"}</td><td style="text-align:left;width:40%">${s.n ? `<span class="meanbar" style="width:${(s.mean / top) * 100}%"></span>` : ""}</td><td class="num">${s.n}</td><td class="num muted">${s.na}</td></tr>`).join("")}</tbody></table></div>`;
+      const take = best && worst && best !== worst ? `가장 높은 평가는 <b>${esc(best.row)}</b>(${fmt1(best.mean)}점), 가장 낮은 평가는 <b>${esc(worst.row)}</b>(${fmt1(worst.mean)}점)입니다.` : "";
+      if (take && /전반|overall|종합|만족/i.test(g.name)) insights.push(`${esc(g.name)}: ${take}`);
+      cards.push(card(g.name, respN, body, { take, wide: g.cols.length > 6 }));
+    } else {
+      const opts = [...new Set(g.cols.flatMap((c) => c.vals.filter(Boolean)))];
+      const counts = g.cols.map((c) => opts.map((o) => c.vals.filter((v) => v === o).length));
+      const max = Math.max(1, ...counts.flat());
+      let take = "", extra = "";
+      if (rankRows) {
+        const w = opts.map((o, oi) => ({ k: o, c: counts.reduce((a, row, ri) => a + row[oi] * Math.max(1, rowsLbl.length - ri), 0) })).sort((a, b) => b.c - a.c);
+        const firsts = opts.map((o, oi) => ({ k: o, c: counts[0][oi] })).sort((a, b) => b.c - a.c);
+        take = `1순위로 가장 많이 고른 기준은 <b>${esc(firsts[0].k)}</b>(${firsts[0].c}명), 순위를 가중한 종합 1위는 <b>${esc(w[0].k)}</b>입니다.`;
+        extra = `<p class="muted small">가중 점수 = 1순위 ${rowsLbl.length}점, 2순위 ${rowsLbl.length - 1}점 …</p>` + barsHTML(w, w.reduce((a, b) => a + b.c, 0));
+        insights.push(take);
+      }
+      const order = opts.map((o, oi) => ({ o, oi, t: counts.reduce((a, r) => a + r[oi], 0) })).sort((a, b) => b.t - a.t);
+      const heat = `<div class="tblwrap"><table><thead><tr><th>${rankRows ? "순위" : "행"}</th>${order.map((x) => `<th>${esc(x.o)}</th>`).join("")}</tr></thead><tbody>${g.cols.map((c, ri) => `<tr><td>${esc(c.row)}</td>${order.map((x) => `<td class="heat" style="${heatColor(counts[ri][x.oi] / max)}">${counts[ri][x.oi] || ""}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+      cards.push(card(g.name, respN, extra + heat, { take, wide: true }));
+    }
+  }
+
+  // 단일 선택
+  for (const c of cls.singles) {
+    const { n, items } = countValues(c.vals);
+    if (!n) continue;
+    const its = items.length > 12 ? [...items.slice(0, 11), { k: `기타 ${items.length - 11}개`, c: items.slice(11).reduce((a, b) => a + b.c, 0) }] : items;
+    const t = items[0], share = pct(t.c, n);
+    const take = items.length > 1 ? `<b>${esc(t.k)}</b>이(가) ${share}%로 가장 많습니다${share >= 50 ? " (과반)" : ""}.` : "";
+    if (items.length > 1 && n >= 5 && insights.length < 9) insights.push(`${esc(c.name)} → <b>${esc(t.k)}</b> ${share}%`);
+    cards.push(card(c.name, n, barsHTML(its, n), { take }));
+  }
+  // 복수 선택
+  for (const c of cls.multis) {
+    const { n, items } = countValues(c.vals, true);
+    if (!n) continue;
+    const take = `응답자의 <b>${pct(items[0].c, n)}%</b>가 <b>${esc(items[0].k)}</b>을(를) 골랐습니다. (복수 선택이라 합이 100%를 넘습니다)`;
+    cards.push(card(c.name, n, barsHTML(items.slice(0, 15), n), { take }));
+  }
+  // 숫자
+  for (const c of cls.numerics) {
+    const s = numStats(c.vals);
+    if (!s.n) continue;
+    let body;
+    if (c.scale) { const { items } = countValues(c.vals.filter((v) => isNum(v))); body = barsHTML(sortScaleItems(items), s.n); }
+    else body = `<p class="muted small">최솟값 ${s.min} · 중앙값 ${s.median} · 최댓값 ${s.max}</p>`;
+    cards.push(card(c.name, s.n, body, { take: `평균 <b>${fmt1(s.mean)}</b>${s.na ? ` · N/A ${s.na}건 제외` : ""}` }));
+  }
+  // 주관식
+  for (const c of cls.texts) {
+    const list = rows.map((r, i) => ({ v: (r[c.i] || "").trim(), d: cls.time ? parseDate(cls.time.vals[i]) : null })).filter((x) => x.v).reverse();
+    if (!list.length) continue;
+    cards.push(card(c.name, list.length, `<ul class="texts">${list.slice(0, 60).map((x) => `<li>${x.d ? `<time>${x.d.getMonth() + 1}/${x.d.getDate()} ${String(x.d.getHours()).padStart(2, "0")}:${String(x.d.getMinutes()).padStart(2, "0")}</time>` : ""}${esc(x.v)}</li>`).join("")}</ul>`, { take: `최근 응답부터 보여 줍니다${list.length > 60 ? ` (최근 60건)` : ""}.`, noChip: true }));
+  }
+
+  // 교차 분석
+  const crossable = cls.singles.filter((c) => countValues(c.vals).items.length <= 15);
+  let cross = "";
+  if (crossable.length >= 2) {
+    if (!state.crossA || !crossable.find((c) => c.name === state.crossA)) state.crossA = crossable[0].name;
+    if (!state.crossB || !crossable.find((c) => c.name === state.crossB) || state.crossB === state.crossA) state.crossB = crossable.find((c) => c.name !== state.crossA).name;
+    const A = crossable.find((c) => c.name === state.crossA), B = crossable.find((c) => c.name === state.crossB);
+    const aK = countValues(A.vals).items.map((x) => x.k), bK = countValues(B.vals).items.map((x) => x.k);
+    const tab = aK.map((a) => { const idx = A.vals.map((v, i) => (v === a ? i : -1)).filter((i) => i >= 0); const tot = idx.filter((i) => B.vals[i]).length; return { a, tot, cells: bK.map((b) => { const c = idx.filter((i) => B.vals[i] === b).length; return { c, p: pct(c, tot) }; }) }; });
+    const body = `<div class="filters hide-present"><label for="cA" class="muted">행</label><select id="cA">${crossable.map((c) => opt(c.name, state.crossA)).join("")}</select><label for="cB" class="muted">열</label><select id="cB">${crossable.filter((c) => c.name !== state.crossA).map((c) => opt(c.name, state.crossB)).join("")}</select></div>
+      <div class="tblwrap"><table><thead><tr><th>${esc(A.name)} \\ ${esc(B.name)}</th>${bK.map((b) => `<th>${esc(b)}</th>`).join("")}<th>응답</th></tr></thead><tbody>${tab.map((r) => `<tr><td>${esc(r.a)}</td>${r.cells.map((x) => `<td class="heat" style="${heatColor(x.p / 100)}" title="${x.c}명">${r.tot ? x.p + "%" : "-"}</td>`).join("")}<td class="num">${r.tot}</td></tr>`).join("")}</tbody></table></div>
+      <p class="muted small">각 행의 합이 100%입니다. 행의 응답 수가 적으면(10명 미만) 비율을 그대로 믿지 마세요.</p>`;
+    cards.splice(canvas ? 2 : 1, 0, card("교차 분석", N, body, { wide: true, noChip: true, take: `<b>${esc(A.name)}</b>에 따라 <b>${esc(B.name)}</b> 응답이 어떻게 달라지는지 봅니다.` }));
+  }
+
+  const insightCard = card("자동 분석 요약", N, `<ul class="insights">${insights.slice(0, 9).map((s) => `<li>${s}</li>`).join("")}</ul><p class="muted small">새 응답이 들어올 때마다 다시 계산됩니다. 평균은 N/A를 뺀 값입니다.</p>`, { wide: true, noChip: true });
+  cards.splice(1, 0, insightCard);
+
+  const banner = (D.demo ? `<div class="banner">지금 보이는 것은 <b>예시 데이터</b>입니다. 실제 응답을 보려면 아래 <b>시트 연결하기</b>를 따라 하세요.</div>` : "") +
+    (D.error ? `<div class="banner err">${esc(D.error)} 마지막으로 받은 데이터를 보여 주고 있습니다.</div>` : "");
+  $("#banner").innerHTML = banner;
+  app.innerHTML = `<div style="display:flex;flex-direction:column;gap:16px">${kpis}${filters}<div class="grid">${cards.join("")}</div>${D.demo ? setupHTML() : ""}</div>`;
+  bindApp();
+  if (D.demo) bindSetup();
+  if (document.body.classList.contains("present")) showSlide();
+}
+
+function timeAgo(d) {
+  const s = (Date.now() - d) / 1000;
+  if (s < 60) return "방금"; if (s < 3600) return `${Math.floor(s / 60)}분 전`; if (s < 86400) return `${Math.floor(s / 3600)}시간 전`; return `${Math.floor(s / 86400)}일 전`;
+}
+
+function setupHTML(err) {
+  const cur = savedLinks()[state.sheet] || CFG.sheets[state.sheet]?.csv || "";
+  return `<section class="card wide howto hide-present"><h2>시트 연결하기</h2>
+    ${err ? `<p class="banner err" style="margin:0">${esc(err)}</p>` : ""}
+    <ol>
+      <li>응답이 쌓이는 구글 시트를 엽니다.</li>
+      <li>메뉴 <b>파일 → 공유 → 웹에 게시</b>를 누릅니다.</li>
+      <li>첫 번째 칸에서 <b>응답이 들어오는 탭</b>을, 두 번째 칸에서 <b>쉼표로 구분된 값(.csv)</b>을 고르고 <b>게시</b>를 누릅니다.</li>
+      <li>나온 링크를 복사해 아래에 붙여 넣고 <b>연결</b>을 누릅니다.</li>
+    </ol>
+    <div class="row"><input id="csvInput" type="url" placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?output=csv" value="${esc(cur)}" aria-label="CSV 링크"><button class="btn primary" id="csvSave" type="button">연결</button></div>
+    <p class="muted small" style="margin:0">여기 붙여 넣은 링크는 <b>이 브라우저에만</b> 저장됩니다. 팀원 모두가 같은 화면을 보려면 <code>config.js</code> 파일의 <code>csv</code> 칸에 같은 링크를 넣어야 합니다.</p>
+  </section>`;
+}
+function bindSetup() {
+  const b = $("#csvSave"); if (!b) return;
+  b.onclick = () => { const v = $("#csvInput").value.trim(); saveLink(state.sheet, v); load(state.sheet, true); };
+}
+function bindApp() {
+  const on = (id, ev, fn) => { const el = $(id); if (el) el.addEventListener(ev, fn); };
+  on("#fCol", "change", (e) => { state.filterCol = e.target.value; state.filterVal = ""; render(); });
+  on("#fVal", "change", (e) => { state.filterVal = e.target.value; render(); });
+  on("#fClear", "click", () => { state.filterCol = ""; state.filterVal = ""; render(); });
+  on("#cA", "change", (e) => { state.crossA = e.target.value; render(); });
+  on("#cB", "change", (e) => { state.crossB = e.target.value; render(); });
+  document.querySelectorAll("[data-series]").forEach((b) => b.addEventListener("click", () => {
+    const i = +b.dataset.series; if (state.canvasOn.has(i)) state.canvasOn.delete(i); else state.canvasOn.add(i); render();
+  }));
+}
+
+/* ------------------------------------------------------------------
+   불러오기 + 자동 새로고침
+------------------------------------------------------------------ */
+async function load(i, force) {
+  const raw = savedLinks()[i] || CFG.sheets[i]?.csv || "";
+  const url = toCsvUrl(raw);
+  const live = $("#live"), liveText = $("#liveText");
+  if (!url) { state.data[i] = Object.assign(demoData(i), { demo: true }); if (i === state.sheet) { render(); liveText.textContent = "예시 데이터"; } return; }
+  try {
+    const res = await fetch(url + (url.includes("?") ? "&" : "?") + "_=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) throw new Error(`시트를 불러오지 못했습니다 (오류 ${res.status}). 링크가 '웹에 게시'의 CSV 링크인지 확인하세요.`);
+    const text = await res.text();
+    if (/^\s*<!doctype html|<html/i.test(text)) throw new Error("CSV가 아니라 웹페이지가 돌아왔습니다. '웹에 게시'에서 형식을 CSV로 골랐는지 확인하세요.");
+    const all = parseCSV(text);
+    if (!all.length) throw new Error("시트가 비어 있습니다.");
+    const headers = dedupe(all[0]);
+    const rows = all.slice(1);
+    const prev = state.lastCount[i];
+    state.data[i] = { headers, rows };
+    state.lastCount[i] = rows.length;
+    if (i === state.sheet) {
+      live.classList.remove("err");
+      liveText.textContent = `${new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })} 확인`;
+      if (prev != null && rows.length > prev) { toast(`새 응답 ${rows.length - prev}건`); live.classList.remove("pulse"); void live.offsetWidth; live.classList.add("pulse"); }
+      render();
+    }
+  } catch (e) {
+    const msg = e instanceof TypeError ? "시트에 연결하지 못했습니다. 인터넷 연결과 링크를 확인하세요." : e.message;
+    const old = state.data[i];
+    state.data[i] = old && old.headers && !old.demo ? Object.assign({}, old, { error: msg }) : { error: msg };
+    if (i === state.sheet) { live.classList.add("err"); liveText.textContent = "연결 오류"; render(); }
+  }
+}
+function dedupe(h) { const seen = {}; return h.map((x) => { x = x.trim(); if (seen[x]) { seen[x]++; return `${x} (${seen[x]})`; } seen[x] = 1; return x; }); }
+let toastT; function toast(m) { const t = $("#toast"); t.textContent = m; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), 3500); }
+
+function renderTabs() {
+  const tabs = $("#tabs");
+  if (CFG.sheets.length < 2) { tabs.hidden = true; return; }
+  tabs.innerHTML = CFG.sheets.map((s, i) => `<button class="tab" role="tab" type="button" aria-selected="${i === state.sheet}" data-tab="${i}">${esc(s.name)}</button>`).join("");
+  tabs.querySelectorAll("[data-tab]").forEach((b) => b.onclick = () => {
+    state.sheet = +b.dataset.tab; state.filterCol = state.filterVal = state.crossA = state.crossB = ""; state.canvasOn = null; state.slide = 0;
+    try { localStorage.setItem("survey-dash-tab", state.sheet); } catch (e) {}
+    renderTabs(); render(); load(state.sheet);
+  });
+}
+
+/* ------------------------------------------------------------------
+   발표 모드
+------------------------------------------------------------------ */
+function showSlide() {
+  const cs = [...document.querySelectorAll("#app .card:not(.howto)")];
+  if (!cs.length) return;
+  state.slide = Math.max(0, Math.min(state.slide, cs.length - 1));
+  cs.forEach((c, i) => c.classList.toggle("on", i === state.slide));
+  $("#slideNo").textContent = `${state.slide + 1} / ${cs.length}`;
+}
+function setPresent(on) {
+  document.body.classList.toggle("present", on);
+  if (on) { state.slide = 0; showSlide(); document.documentElement.requestFullscreen?.().catch(() => {}); }
+  else { document.querySelectorAll(".card.on").forEach((c) => c.classList.remove("on")); if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {}); }
+}
+$("#presentBtn").onclick = () => setPresent(true);
+$("#exitBtn").onclick = () => setPresent(false);
+$("#prevBtn").onclick = () => { state.slide--; showSlide(); };
+$("#nextBtn").onclick = () => { state.slide++; showSlide(); };
+$("#refreshBtn").onclick = () => load(state.sheet, true);
+document.addEventListener("keydown", (e) => {
+  if (!document.body.classList.contains("present")) return;
+  if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") { state.slide++; showSlide(); e.preventDefault(); }
+  if (e.key === "ArrowLeft" || e.key === "PageUp") { state.slide--; showSlide(); e.preventDefault(); }
+  if (e.key === "Escape") setPresent(false);
+});
+document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement && document.body.classList.contains("present")) setPresent(false); });
+
+/* ------------------------------------------------------------------
+   예시 데이터 (시트를 연결하기 전에만 보임)
+------------------------------------------------------------------ */
+function demoData(i) {
+  let seed = 7 + i; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const pick = (arr, w) => { const tot = (w || arr.map(() => 1)).reduce((a, b) => a + b, 0); let r = rnd() * tot; for (let k = 0; k < arr.length; k++) { r -= (w ? w[k] : 1); if (r <= 0) return arr[k]; } return arr[arr.length - 1]; };
+  const brandMode = i === 0;
+  const targets = brandMode ? ["현대자동차", "토요타", "폭스바겐", "마루티 스즈키", "포드", "테슬라", "메르세데스 벤츠", "BYD"] : ["자동차 구매·소유", "대중교통", "택시", "카셰어링·단기렌트", "장기렌트"];
+  const factors = brandMode ? ["구매가격의 경제성", "보유비용의 경제성", "안전성", "품질·내구 신뢰성", "승차감·정숙성", "디자인 매력", "공간 활용성", "운전보조·디지털 편의", "정비·사후지원 편의"]
+    : ["경제성", "이용 접근성", "안전성", "이동 중 편안함", "일정과 경로의 자유도", "이동 시간의 효율성", "운전 부담", "유지 및 관리 부담", "이용 중단의 용이성"];
+  const bias = targets.map(() => factors.map(() => 2.4 + rnd() * 2));
+  const H = ["타임스탬프", "연령대", brandMode ? "자동차 보유" : "운전면허", "주로 이용하는 국가",
+    ...["1순위", "2순위", "3순위"].map((r) => `가장 중요한 기준 [${r}]`),
+    ...factors.flatMap((f, fi) => targets.map((t) => `II-${fi + 1} ${f} [${t}]`)),
+    ...targets.map((t) => `전반적 평가 [${t}]`),
+    brandMode ? "현대자동차 구매 후보 포함 의향" : "자동차 소유 상태",
+    brandMode ? "판단에 영향을 준 것" : "소유하지 않거나 줄이는 이유",
+    "바뀌면 좋겠는 점"];
+  const comments = ["보험료가 너무 비싸요", "충전소가 더 많아졌으면", "중고차 처분 절차가 번거롭습니다", "구독형으로 필요할 때만 쓰고 싶어요", "정비소 예약이 어려워요", "가격 비교가 쉬웠으면 좋겠습니다", "주차 공간이 늘 부족합니다"];
+  const rows = []; const start = new Date(); start.setDate(start.getDate() - 6); start.setHours(9, 0, 0, 0);
+  const n = 84;
+  for (let k = 0; k < n; k++) {
+    const d = new Date(start.getTime() + (k / n) * (Date.now() - start.getTime()) * (0.9 + rnd() * 0.1));
+    const ap = d.getHours() < 12 ? "오전" : "오후"; const h12 = d.getHours() % 12 || 12;
+    const ts = `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()} ${ap} ${h12}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`;
+    const ranks = []; while (ranks.length < 3) { const f = pick(factors, factors.map((_, q) => (q < 3 ? 3 : 1))); if (!ranks.includes(f)) ranks.push(f); }
+    const r = [ts, pick(["20대", "30대", "40대", "50대", "60대 이상"], [5, 4, 3, 2, 1]), brandMode ? pick(["본인·가구 보유", "보유하지 않음"], [3, 2]) : pick(["있음", "없음"], [4, 1]),
+      pick(["한국", "미국", "인도", "독일", "브라질"], [6, 2, 2, 1, 1]), ...ranks];
+    factors.forEach((f, fi) => targets.forEach((t, ti) => { r.push(rnd() < 0.08 ? "N/A" : String(Math.max(1, Math.min(5, Math.round(bias[ti][fi] + (rnd() - 0.5) * 2))))); }));
+    targets.forEach((t, ti) => r.push(String(Math.max(0, Math.min(5, Math.round(bias[ti].reduce((a, b) => a + b, 0) / factors.length + (rnd() - 0.5) * 2))))));
+    r.push(brandMode ? pick(["전혀 없음", "낮음", "보통", "높음", "매우 높음"], [1, 2, 4, 3, 1]) : pick(["소유차를 주로 이용함", "소유차가 있지만 다른 방식을 더 자주 이용함", "과거 소유했지만 지금은 아님", "고려했지만 구입하지 않음", "고려한 적이 없음"], [5, 2, 1, 2, 2]));
+    const multiOpts = brandMode ? ["구매가격의 경제성", "안전성", "디자인 매력", "브랜드 이미지·신뢰", "원하는 모델이 없음"] : ["구매비용", "유지비용", "주차 공간", "운전 부담", "이용 빈도가 낮음", "다른 방식으로 충분함"];
+    r.push([...new Set([pick(multiOpts), pick(multiOpts)])].join(", "));
+    r.push(rnd() < 0.35 ? pick(comments) : "");
+    rows.push(r);
+  }
+  return { headers: H, rows };
+}
+
+/* ------------------------------------------------------------------ */
+try { const t = +localStorage.getItem("survey-dash-tab"); if (t >= 0 && t < CFG.sheets.length) state.sheet = t; } catch (e) {}
+renderTabs();
+CFG.sheets.forEach((_, i) => load(i));
+setInterval(() => { if (!document.hidden) load(state.sheet); }, Math.max(20, CFG.refreshSeconds) * 1000);
+setInterval(() => { if (!document.hidden && !document.body.classList.contains("present")) { const D = state.data[state.sheet]; if (D && D.headers) render(); } }, 60000);
+</script>
+</body>
+</html>
