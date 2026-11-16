@@ -182,6 +182,24 @@ svg .endlab { fill: var(--ink); font-family: var(--font-data); font-size: 13px; 
 .legend button i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 .legend button[aria-pressed="true"] { background: var(--ink); color: var(--surface); font-weight: 600; }
 
+/* blue ocean */
+.seg { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.seg button { border: 0; background: var(--track); border-radius: 999px; padding: 5px 14px; cursor: pointer; font-size: 13px; }
+.seg button .num { color: var(--muted); font-size: 12px; margin-left: 2px; }
+.seg button[aria-pressed="true"] { background: var(--mauve-deep); color: #fff; font-weight: 600; }
+.seg button[aria-pressed="true"] .num { color: rgba(255, 255, 255, 0.8); }
+.analysis { margin: 0; padding: 14px 16px 14px 34px; background: color-mix(in srgb, var(--mauve) 10%, var(--surface)); border-radius: 14px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.analysis li::marker { color: var(--mauve-deep); }
+i.sw { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; }
+tr.ovrow td { font-weight: 600; border-top: 2px solid var(--line); background: var(--track); }
+table.umap th { text-align: center; }
+table.umap th span { display: block; color: var(--ink); }
+table.umap th small, table.umap td small { display: block; font-weight: 400; color: var(--muted); font-size: 11.5px; }
+table.umap td:first-child { min-width: 9em; }
+table.umap td.ucell { text-align: center; font-family: var(--font-data); min-width: 5.5em; height: 44px; background: var(--track); }
+table.umap td.hot { outline: 2.5px solid var(--coral-deep); outline-offset: -2.5px; font-weight: 700; }
+table.umap tr.nonerow td { border-top: 2px solid var(--line); }
+
 /* insights */
 .insights { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 10px; }
 .insights li { padding: 12px 14px 12px 16px; position: relative; font-size: 14px; background: var(--track); border-radius: 14px; }
@@ -449,6 +467,7 @@ const ICONS = {
   plus: '<path d="M12 5v14M5 12h14"/>',
   gauge: '<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>',
   pie: '<path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/>',
+  map: '<path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/>',
   compare: '<path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
 };
 const icon = (n) => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n] || ICONS.compare}</svg>`;
@@ -557,7 +576,7 @@ function canvasSVG(groups, labels, means, on) {
     const active = on.has(li), col = SERIES[li % SERIES.length];
     let d = "", pen = false;
     groups.forEach((g, gi) => { const v = means[gi][li]; if (isNaN(v)) { pen = false; return; } d += `${pen ? "L" : "M"}${x(gi).toFixed(1)},${y(v).toFixed(1)}`; pen = true; });
-    s += `<path d="${d}" fill="none" stroke="${active ? col : "var(--line)"}" stroke-width="${active ? 3 : 1.6}" stroke-linejoin="round"/>`;
+    s += `<path d="${d}" fill="none" stroke="${active ? col : "var(--line)"}" stroke-width="${active ? (li === 0 ? 4 : 2.4) : 1.6}" stroke-linejoin="round"${active && li !== 0 ? ' stroke-opacity="0.9"' : ""}/>`;
     if (active) s += groups.map((g, gi) => isNaN(means[gi][li]) ? "" : `<circle cx="${x(gi)}" cy="${y(means[gi][li])}" r="5" fill="${col}" stroke="var(--surface)" stroke-width="2"><title>${esc(labels[li])} · ${esc(g.name)}: ${fmt1(means[gi][li])}</title></circle>`).join("");
   }
   return s + `</svg>`;
@@ -618,42 +637,131 @@ function render() {
   if (N) insights.push(`지금까지 <b>${N}명</b>이 응답했습니다${todayN ? ` (오늘 ${todayN}명)` : ""}${D.excluded ? `. 테스트 응답 ${D.excluded}건은 뺐습니다` : ""}.`);
   if (N && N < 30) insights.push(`응답이 30건 미만이라 비율이 크게 흔들릴 수 있습니다. 해석은 참고용으로만 하세요.`);
 
-  // ---- 전략캔버스
+  // ---- 블루오션 분석: 전략캔버스 + 구매자 효용지도
+  // 근거: Kim & Mauborgne(2005) 블루오션 전략, 박경민 외(2023) 연세경영연구 60(1) — 설문 평균으로 As-Is 전략캔버스를 그리고
+  //       구매자 효용지도를 고객/비고객 관점으로 나눠 작성한 방식을 따릅니다.
+  const SEG = hints.segments || {};
+  if (!state.seg) state.seg = {};
+  const segRows = (key) => {
+    const seg = SEG[key], id = state.seg[key] || "all";
+    if (!seg || id === "all") return rows;
+    const g = seg.groups.find((x) => x.id === id), ci = headers.indexOf(seg.col);
+    if (!g || ci < 0) return rows;
+    return rows.filter((r) => { const v = (r[ci] || "").trim(); if (!v) return false; const inn = g.values.includes(v); return g.not ? !inn : inn; });
+  };
+  const segButtons = (key) => {
+    const seg = SEG[key]; if (!seg) return "";
+    const cur = state.seg[key] || "all";
+    const ci = headers.indexOf(seg.col);
+    const count = (g) => g.id === "all" ? rows.length : rows.filter((r) => { const v = (r[ci] || "").trim(); if (!v) return false; const inn = g.values.includes(v); return g.not ? !inn : inn; }).length;
+    return `<div class="seg" role="group" aria-label="관점 고르기"><span class="muted small">관점</span>${seg.groups.map((g) => `<button type="button" data-seg="${key}" data-segid="${g.id}" aria-pressed="${g.id === cur}">${esc(g.label)} <span class="num">${count(g)}</span></button>`).join("")}</div>`;
+  };
   const canvases = findCanvases(cls.grids);
   const inCanvas = new Set(canvases.flat());
-  const canvasCards = [];
+  const blueCards = [];
   canvases.forEach((canvas, ci) => {
+    const prefix = (canvas[0].name.match(/^(Q\d+)/) || [])[1];
+    const segKey = "canvas";
+    const sub = segRows(segKey);
     const labels = canvas[0].cols.map((c) => c.row);
-    const stats = canvas.map((g) => g.cols.map((c) => numStats(c.vals)));
+    const stats = canvas.map((g) => g.cols.map((c) => numStats(sub.map((r) => (r[c.i] || "").trim()))));
     const means = stats.map((r) => r.map((s) => s.mean));
     const ns = stats.map((r) => r.map((s) => s.n));
     if (!state.canvasOn) state.canvasOn = {};
-    if (!state.canvasOn[ci]) state.canvasOn[ci] = new Set([0]);
+    if (!state.canvasOn[ci]) state.canvasOn[ci] = new Set(labels.map((_, i) => i));
     const on = state.canvasOn[ci];
-    const prefix = (canvas[0].name.match(/^(Q\d+)/) || [])[1];
-    const title = (hints.canvasTitles && hints.canvasTitles[prefix]) || "요소별 평균 비교 (전략캔버스)";
+    const title = (hints.canvasTitles && hints.canvasTitles[prefix]) || "전략캔버스";
     const legend = `<div class="legend">${labels.map((l, i) => `<button type="button" data-canvas="${ci}" data-series="${i}" aria-pressed="${on.has(i)}"><i style="background:${SERIES[i % SERIES.length]}"></i>${esc(l)}</button>`).join("")}</div>`;
+    // 전반적 평가 행 (논문의 '전반적 만족감' 행)
+    const ovName = (hints.canvasOverall || {})[prefix];
+    const ovGrid = ovName ? cls.grids.find((g) => g.name === ovName) : null;
+    const ov = labels.map((l) => { const c = ovGrid && ovGrid.cols.find((x) => x.row === l); return c ? numStats(sub.map((r) => (r[c.i] || "").trim())) : { n: 0, mean: NaN }; });
     const allMeans = means.flat().filter((v) => !isNaN(v));
-    if (!allMeans.length) return;
+    const body0 = segButtons(segKey);
+    if (!allMeans.length) { blueCards.push(card(title, 0, body0 + `<p class="muted">이 관점에 해당하는 응답이 아직 없습니다.</p>`, { wide: true, noChip: true })); return; }
     const lo = Math.min(...allMeans), hi = Math.max(...allMeans);
-    const table = `<div class="tblwrap"><table><thead><tr><th>기준</th>${labels.map((l) => `<th>${esc(l)}</th>`).join("")}</tr></thead><tbody>${canvas.map((g, gi) => {
-      const ok = means[gi].filter((v) => !isNaN(v)); const rowMax = ok.length ? Math.max(...ok) : NaN;
-      return `<tr><td>${esc(shortName(g.name))}</td>${means[gi].map((v, li) => isNaN(v) ? `<td class="muted">-</td>` : `<td class="heat" style="${heatColor(hi > lo ? (v - lo) / (hi - lo) : 0.5)}" title="응답 ${ns[gi][li]}건">${fmt1(v)}${v === rowMax ? " ▲" : ""}</td>`).join("")}</tr>`;
-    }).join("")}</tbody><tfoot><tr><td class="muted small">평가한 사람 수</td>${labels.map((_, li) => `<td class="num muted small">${Math.max(...ns.map((r) => r[li]))}</td>`).join("")}</tr></tfoot></table></div><p class="muted small">칸 = 평균 점수(? 판단 어려움과 '잘 모름' 제외). ▲ = 그 기준에서 가장 높은 대상. 범례를 눌러 비교할 대상을 켜고 끌 수 있습니다.</p>`;
+    const table = `<div class="tblwrap"><table><thead><tr><th>전략요소</th>${labels.map((l, i) => `<th><i class="sw" style="background:${SERIES[i % SERIES.length]}"></i>${esc(l)}</th>`).join("")}<th>차이</th></tr></thead><tbody>${canvas.map((g, gi) => {
+      const ok = means[gi].filter((v) => !isNaN(v)); const rowMax = ok.length ? Math.max(...ok) : NaN; const spread = ok.length > 1 ? rowMax - Math.min(...ok) : NaN;
+      return `<tr><td>${esc(shortName(g.name))}</td>${means[gi].map((v, li) => isNaN(v) ? `<td class="muted">-</td>` : `<td class="heat" style="${heatColor(hi > lo ? (v - lo) / (hi - lo) : 0.5)}" title="${ns[gi][li]}명 평가">${fmt1(v)}${v === rowMax ? " ▲" : ""}</td>`).join("")}<td class="num muted">${isNaN(spread) ? "-" : fmt1(spread)}</td></tr>`;
+    }).join("")}${ovGrid ? `<tr class="ovrow"><td>전반적 평가 (0~10점)</td>${ov.map((s) => `<td class="num">${s.n ? fmt1(s.mean) : "-"}</td>`).join("")}<td></td></tr>` : ""}</tbody><tfoot><tr><td class="muted small">평가한 사람 수</td>${labels.map((_, li) => `<td class="num muted small">${Math.max(0, ...ns.map((r) => r[li]))}</td>`).join("")}<td></td></tr></tfoot></table></div>`;
+    // 해석 (논문의 As-Is 전략캔버스 서술 방식: 대안 간 차이가 큰 요소 / 대동소이한 요소, 기준 대상의 강점·약점)
     const ref = labels[0];
-    const valid = canvas.map((g, gi) => ({ g, gi, v: means[gi][0], others: means[gi].filter((x, li) => li && !isNaN(x)) })).filter((x) => !isNaN(x.v) && x.others.length);
-    const wins = valid.filter((x) => x.v >= Math.max(...x.others)).length;
-    const above = valid.filter((x) => x.v >= (x.others.reduce((a, b) => a + b, 0) + x.v) / (x.others.length + 1)).length;
-    const gaps = valid.map((x) => ({ name: shortName(x.g.name), gap: x.v - Math.max(...x.others) })).sort((a, b) => a.gap - b.gap);
-    const best = gaps.length ? gaps[gaps.length - 1] : null;
-    let take = `<b>${esc(ref)}</b>은(는) ${valid.length}개 기준 중 <b>${wins}개</b>에서 1위, <b>${above}개</b>에서 평균 이상입니다.`;
-    if (gaps.length && gaps[0].gap < 0) take += ` 가장 뒤처진 기준은 <b>${esc(gaps[0].name)}</b>(1위와 ${fmt1(-gaps[0].gap)}점 차)`;
-    if (best && best.gap > 0) take += `${gaps[0].gap < 0 ? "," : ""} 가장 앞선 기준은 <b>${esc(best.name)}</b>(2위보다 ${fmt1(best.gap)}점 높음)`;
-    take += gaps.length && (gaps[0].gap < 0 || (best && best.gap > 0)) ? "입니다." : "";
-    insights.push(take);
-    const help = `선이 <b>위에 있을수록</b> 그 기준에서 좋은 평가예요(1~5점). <b>진한 선이 ${esc(ref)}</b>, 회색 선은 나머지예요. 위 이름 버튼을 누르면 그 대상의 선이 색으로 켜져요. 아래 표는 같은 내용을 숫자로 보여 주고, 진한 칸일수록 점수가 높아요.`;
-    canvasCards.push({ order: canvas[0].cols[0].i, html: card(title, Math.max(...ns.flat()), legend + canvasSVG(canvas, labels, means, on) + table, { wide: true, take, help, nLabel: `대상 ${labels.length}개 · 기준 ${canvas.length}개` }) });
+    const rowsA = canvas.map((g, gi) => {
+      const vals = means[gi].map((v, li) => ({ v, li })).filter((x) => !isNaN(x.v));
+      const best = vals.slice().sort((a, b) => b.v - a.v)[0];
+      const others = vals.filter((x) => x.li !== 0);
+      const bestOther = others.slice().sort((a, b) => b.v - a.v)[0];
+      return { name: shortName(g.name), refV: means[gi][0], best, bestOther, spread: vals.length > 1 ? Math.max(...vals.map((x) => x.v)) - Math.min(...vals.map((x) => x.v)) : NaN };
+    }).filter((x) => x.best);
+    const tops = rowsA.filter((x) => x.best.li === 0);
+    const behind = rowsA.filter((x) => !isNaN(x.refV) && x.bestOther && x.bestOther.v > x.refV).sort((a, b) => (a.refV - a.bestOther.v) - (b.refV - b.bestOther.v));
+    const bySpread = rowsA.filter((x) => !isNaN(x.spread)).sort((a, b) => a.spread - b.spread);
+    const flat = bySpread.filter((x) => x.spread <= 0.5);
+    const wide = bySpread.slice(-2).reverse();
+    const ovBest = ov.map((s, li) => ({ s, li })).filter((x) => x.s.n).sort((a, b) => b.s.mean - a.s.mean)[0];
+    const minN = Math.min(...labels.map((_, li) => Math.max(0, ...ns.map((r) => r[li]))));
+    const lines = [];
+    lines.push(tops.length ? `<b>${esc(ref)}</b>${josa(ref, "이", "가")} 가장 높은 요소는 ${tops.length}개입니다: ${tops.map((x) => `<b>${esc(x.name)}</b>(${fmt1(x.refV)})`).join(", ")}.` : `<b>${esc(ref)}</b>${josa(ref, "이", "가")} 1위인 요소는 없습니다.`);
+    if (behind.length) lines.push(`<b>${esc(ref)}</b>${josa(ref, "이", "가")} 가장 크게 뒤처진 요소는 ${behind.slice(0, 3).map((x) => `<b>${esc(x.name)}</b>(${fmt1(x.refV)}, ${esc(labels[x.bestOther.li])} ${fmt1(x.bestOther.v)})`).join(", ")}입니다.`);
+    if (wide.length) lines.push(`대안끼리 차이가 가장 큰 요소는 ${wide.map((x) => `<b>${esc(x.name)}</b>(최고 ${esc(labels[x.best.li])}, 차이 ${fmt1(x.spread)}점)`).join(", ")}입니다. 가치곡선이 갈라지는 지점이에요.`);
+    lines.push(flat.length ? `대안끼리 점수가 거의 같은 요소(차이 0.5점 이하)는 ${flat.map((x) => `<b>${esc(x.name)}</b>`).join(", ")}입니다. 어느 대안도 차별화하지 못한, 대동소이한 요소예요.` : `모든 요소에서 대안 간 차이가 0.5점을 넘습니다. 가치곡선이 서로 뚜렷하게 구분돼요.`);
+    if (ovBest) lines.push(`전반적 평가는 <b>${esc(labels[ovBest.li])}</b>${josa(labels[ovBest.li], "이", "가")} 가장 높습니다(${fmt1(ovBest.s.mean)}점 / 10점).`);
+    if (minN < 30) lines.push(`<span class="muted">평가한 사람이 30명보다 적은 대상이 있어(최소 ${minN}명) 아직은 참고용입니다.</span>`);
+    insights.push(`${esc(title.replace(/\s*\(.*\)$/, ""))}: ${lines[0]}`);
+    const help = `Kim &amp; Mauborgne의 <b>전략캔버스</b>예요. 가로축은 경쟁 요소(전략요소), 세로축은 응답자가 매긴 제공 수준(1~5점 평균)이고, 대안마다 점을 이은 선이 <b>가치곡선</b>이에요. 박경민 외(2023)처럼 설문 평균으로 그린 <b>현재(As-Is) 캔버스</b>이고, 마지막 줄은 전반적 평가예요. 이름 버튼으로 선을 켜고 끌 수 있어요.`;
+    blueCards.push(card(title, Math.max(...ns.flat()), body0 + legend + canvasSVG(canvas, labels, means, on) + `<ul class="analysis">${lines.map((l) => `<li>${l}</li>`).join("")}</ul>` + table, { wide: true, help, noChip: true, nLabel: `대안 ${labels.length}개 · 요소 ${canvas.length}개` }));
   });
+
+  // 구매자 효용지도
+  const UM = hints.utilityMap;
+  const umGrid = UM ? cls.grids.find((g) => g.name === UM.grid) : null;
+  if (umGrid) {
+    inCanvas.add(umGrid);
+    const sub = segRows("utility");
+    const code = (v) => String(v).trim().charAt(0);
+    const stages = umGrid.cols.map((c, si) => {
+      const vals = sub.map((r) => (r[c.i] || "").trim()).filter(Boolean);
+      const exp = vals.filter((v) => code(v) !== UM.skip);
+      const levers = UM.levers.map((lv) => exp.filter((v) => lv.codes.includes(code(v))).length);
+      const none = exp.filter((v) => code(v) === UM.none).length;
+      return { label: c.row, theory: (UM.theoryStages || [])[si] || "", n: exp.length, levers, none };
+    });
+    const cells = []; stages.forEach((s, si) => s.levers.forEach((c, li) => cells.push({ si, li, c, p: s.n ? c / s.n : 0 })));
+    const maxP = Math.max(0.01, ...cells.map((x) => x.p));
+    const hot = cells.filter((x) => x.c > 0).sort((a, b) => b.p - a.p).slice(0, 3);
+    const isHot = (si, li) => hot.some((h) => h.si === si && h.li === li);
+    const stageHead = stages.map((s) => `<th><span>${esc(s.label.replace(/^\d+\.\s*/, ""))}</span><small>${esc(s.theory)}</small></th>`).join("");
+    const bodyRows = UM.levers.map((lv, li) => `<tr><td><b>${esc(lv.name)}</b><small>${esc(lv.desc)}</small></td>${stages.map((s, si) => { const c = s.levers[li], p = s.n ? c / s.n : 0; return `<td class="ucell${isHot(si, li) ? " hot" : ""}" style="${c ? `background: color-mix(in srgb, var(--coral-deep) ${Math.round(8 + (p / maxP) * 70)}%, var(--surface)); color:${p / maxP > 0.55 ? "#fff" : "var(--ink)"}` : ""}" title="${c}명 / ${s.n}명">${c ? `${isHot(si, li) ? "✕ " : ""}${Math.round(p * 100)}%` : ""}</td>`; }).join("")}</tr>`).join("");
+    const noneRow = `<tr class="nonerow"><td><b>불편 없음</b><small>H · 겪었지만 괜찮았음</small></td>${stages.map((s) => { const p = s.n ? s.none / s.n : 0; return `<td class="ucell ok" style="background: color-mix(in srgb, var(--sage) ${Math.round(8 + p * 60)}%, var(--surface))" title="${s.none}명 / ${s.n}명">${s.n ? `${p >= 0.5 ? "○ " : ""}${Math.round(p * 100)}%` : ""}</td>`; }).join("")}</tr>`;
+    const table = `<div class="tblwrap"><table class="umap"><thead><tr><th>효용 레버 \\ 구매자 경험 단계</th>${stageHead}</tr></thead><tbody>${bodyRows}${noneRow}</tbody><tfoot><tr><td class="muted small">그 단계를 겪은 사람</td>${stages.map((s) => `<td class="num muted small">${s.n}명</td>`).join("")}</tr></tfoot></table></div>`;
+    const lines = [];
+    if (hot.length) lines.push(`구매자 효용을 가장 크게 가로막는 칸(✕)은 ${hot.map((h) => `<b>${esc(stages[h.si].label.replace(/^\d+\.\s*/, ""))}</b> 단계의 <b>${esc(UM.levers[h.li].name)}</b>(${Math.round(h.p * 100)}%)`).join(", ")}입니다.`);
+    const leverTot = UM.levers.map((lv, li) => ({ lv, c: stages.reduce((a, s) => a + s.levers[li], 0) })).sort((a, b) => b.c - a.c);
+    const totExp = stages.reduce((a, s) => a + s.n, 0);
+    if (leverTot[0] && leverTot[0].c) lines.push(`여섯 단계를 통틀어 가장 많이 꼽힌 레버는 <b>${esc(leverTot[0].lv.name)}</b>(${esc(leverTot[0].lv.desc)}, ${Math.round((leverTot[0].c / Math.max(1, totExp)) * 100)}%)입니다.`);
+    const painS = stages.filter((s) => s.n).map((s) => ({ s, p: 1 - s.none / s.n })).sort((a, b) => b.p - a.p);
+    if (painS.length > 1) lines.push(`불편을 겪은 비율이 가장 높은 단계는 <b>${esc(painS[0].s.label.replace(/^\d+\.\s*/, ""))}</b>(${Math.round(painS[0].p * 100)}%), 가장 낮은 단계는 <b>${esc(painS[painS.length - 1].s.label.replace(/^\d+\.\s*/, ""))}</b>(${Math.round(painS[painS.length - 1].p * 100)}%)입니다.`);
+    const untouched = UM.levers.filter((lv, li) => stages.every((s) => !s.levers[li]));
+    if (untouched.length) lines.push(`아무도 꼽지 않은 레버: ${untouched.map((lv) => esc(lv.name)).join(", ")}.`);
+    // 두 관점 비교 (논문의 전문의/일반인 관점 구분에 해당)
+    const segU = SEG.utility;
+    if (segU && (state.seg.utility || "all") === "all") {
+      const ci = headers.indexOf(segU.col);
+      const topFor = (g) => {
+        const rs = rows.filter((r) => { const v = (r[ci] || "").trim(); if (!v) return false; const inn = g.values.includes(v); return g.not ? !inn : inn; });
+        let best = null;
+        umGrid.cols.forEach((c, si) => { const ex = rs.map((r) => (r[c.i] || "").trim()).filter((v) => v && code(v) !== UM.skip); UM.levers.forEach((lv, li) => { const k = ex.filter((v) => lv.codes.includes(code(v))).length; const p = ex.length ? k / ex.length : 0; if (k && (!best || p > best.p)) best = { si, li, p, n: rs.length }; }); });
+        return best;
+      };
+      const parts = segU.groups.filter((g) => g.id !== "all").map((g) => ({ g, t: topFor(g) })).filter((x) => x.t);
+      if (parts.length === 2) lines.push(`관점별로 보면 ${parts.map((x) => `<b>${esc(x.g.short || x.g.label)}</b>(${x.t.n}명)는 <b>${esc(stages[x.t.si].label.replace(/^\d+\.\s*/, ""))}·${esc(UM.levers[x.t.li].name)}</b>(${Math.round(x.t.p * 100)}%)`).join(", ")}에서 가장 크게 막힙니다.`);
+    }
+    if (Math.min(...stages.map((s) => s.n)) < 30) lines.push(`<span class="muted">단계별로 겪은 사람이 30명보다 적은 곳이 있어 아직은 참고용입니다.</span>`);
+    if (lines[0]) insights.push(`구매자 효용지도: ${lines[0]}`);
+    const help = `Kim &amp; Mauborgne의 <b>구매자 효용지도</b>예요. 가로는 구매자 경험 6단계(구매→인도→사용→보완→유지보수→처분), 세로는 효용 레버예요. 칸 = 그 단계를 겪은 사람 중 그 불편을 <b>가장 큰 불편</b>으로 고른 비율이고, <b>진할수록</b> 효용이 막혀 있다는 뜻이에요. ✕는 가장 진한 3칸, ○는 절반 넘게 ‘불편 없음’이라 답한 단계예요. 논문(박경민 외, 2023)처럼 관점을 나눠 볼 수 있어요.`;
+    blueCards.push(card("구매자 효용지도 (Q5)", sub.length, segButtons("utility") + `<ul class="analysis">${lines.map((l) => `<li>${l}</li>`).join("")}</ul>` + table, { wide: true, help, noChip: true, nLabel: `응답 <span class="num">${sub.length}</span>명` }));
+  }
+  const canvasCards = [];
 
   // ---- 표형 문항
   for (const g of cls.grids) {
@@ -783,7 +891,8 @@ function render() {
   const secs = (hints.sections || []).map((sec) => ({ ...sec, re: new RegExp(sec.match), items: [] }));
   const etc = { id: "etc", title: "그 밖의 문항", desc: "", icon: "compare", color: "sky", items: [] };
   for (const it of items) (secs.find((sec) => sec.re.test(it.title)) || etc).items.push(it);
-  const allSecs = [...secs, etc].filter((sec) => sec.items.length);
+  const blueSec = { id: "blue", title: "블루오션 분석", desc: "전략캔버스와 구매자 효용지도입니다. Kim & Mauborgne(2005)의 도구를 박경민 외(2023, 연세경영연구 60권 1호)처럼 설문 자료로 그렸어요.", icon: "map", color: "mauve", items: blueCards.map((html) => ({ html })) };
+  const allSecs = [blueSec, ...secs, etc].filter((sec) => sec.items.length);
   if (crossCard) allSecs.push({ id: "compare", title: "직접 골라 비교하기", desc: "두 문항을 골라, 한 문항의 답에 따라 다른 문항의 답이 어떻게 달라지는지 봅니다. 예: 연령대별로 자가용을 대하는 태도.", icon: "compare", color: "sky", items: [{ html: crossCard }] });
   const nav = `<nav class="nav hide-present" aria-label="바로가기">${allSecs.map((sec) => `<a href="#${sec.id}" class="c-${sec.color || "mauve"}"><i></i>${esc(sec.title)}</a>`).join("")}</nav>`;
   const secHTML = allSecs.map((sec) => `<section class="sec c-${sec.color || "mauve"}" id="${sec.id}"><div class="sec-head"><span class="s-ico">${icon(sec.icon)}</span><div><h2>${esc(sec.title)}</h2>${sec.desc ? `<p>${esc(sec.desc)}</p>` : ""}</div></div><div class="grid">${sec.items.map((x) => x.html).join("")}</div></section>`).join("");
@@ -841,6 +950,7 @@ function bindApp() {
   on("#fClear", "click", () => { state.filterCol = ""; state.filterVal = ""; render(); });
   on("#insightHide", "click", () => { state.hideInsight = true; prefs("hideInsight", true); render(); });
   on("#insightShow", "click", () => { state.hideInsight = false; prefs("hideInsight", false); render(); });
+  document.querySelectorAll("[data-seg]").forEach((b) => b.addEventListener("click", () => { state.seg[b.dataset.seg] = b.dataset.segid; render(); }));
   on("#cA", "change", (e) => { state.crossA = e.target.value; render(); });
   on("#cB", "change", (e) => { state.crossB = e.target.value; render(); });
   document.querySelectorAll("[data-series]").forEach((b) => b.addEventListener("click", () => {
