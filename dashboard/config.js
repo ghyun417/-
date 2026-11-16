@@ -19,6 +19,9 @@ window.DASHBOARD_CONFIG = {
   // 목표 응답 수. 0이면 표시하지 않습니다.
   goal: 0,
 
+  // 연령대마다 모으고 싶은 응답 수. 이보다 적으면 맨 위 화면에 '부족'으로 표시됩니다.
+  ageTarget: 30,
+
   // 몇 초마다 새 응답을 확인할지
   refreshSeconds: 60,
 
