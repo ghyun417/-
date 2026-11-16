@@ -149,24 +149,21 @@ svg .endlab { fill: var(--ink); font-family: var(--font-data); font-size: 12px; 
 .agecard .headline b { color: var(--signal); }
 .agecard .headline.ok b { color: var(--good); }
 .ages { display: flex; flex-direction: column; gap: 12px; }
-.age { display: grid; grid-template-columns: 7.5em minmax(0, 1fr) 4.5em 9.5em; gap: 14px; align-items: center; }
+.age { display: grid; grid-template-columns: 7.5em minmax(0, 1fr) 4.5em 4.2em; gap: 14px; align-items: center; }
 .age .name { font-weight: 600; font-size: 16px; }
-.age .trk { position: relative; height: 26px; background: var(--track); border-radius: 4px; }
-.age .fill { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: var(--accent); }
-.age.low .fill { background: var(--warn); }
-.age.crit .fill { background: var(--signal); }
-.age .goal { position: absolute; top: -4px; bottom: -4px; width: 0; border-left: 2px dashed var(--ink); opacity: 0.55; }
+.age .trk { height: 26px; background: var(--track); border-radius: 4px; overflow: hidden; }
+.age .fill { display: block; height: 100%; border-radius: 4px; background: color-mix(in srgb, var(--accent) 50%, var(--track)); }
+.age.most .fill { background: var(--accent); }
+.age.least .fill { background: var(--signal); }
 .age .cnt { font-family: var(--font-data); font-size: 22px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
 .age .cnt small { font-size: 12px; color: var(--muted); font-weight: 500; margin-left: 2px; }
-.pill { display: inline-flex; justify-content: center; font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
-.pill.ok { background: color-mix(in srgb, var(--good) 16%, var(--surface)); color: var(--good); }
-.pill.low { background: color-mix(in srgb, var(--warn) 18%, var(--surface)); color: var(--warn); }
-.pill.crit { background: color-mix(in srgb, var(--signal) 16%, var(--surface)); color: var(--signal); }
-.pill.na { background: var(--track); color: var(--muted); }
-@media (max-width: 560px) {
-  .age { grid-template-columns: 6em minmax(0, 1fr) 3.6em; gap: 8px; }
-  .age .pill { grid-column: 2 / -1; justify-self: start; }
-}
+.age .share { color: var(--muted); font-size: 14px; text-align: right; }
+.agecard .takeaway b { color: var(--accent); }
+.agecard .takeaway b.lo { color: var(--signal); }
+@media (max-width: 560px) { .age { grid-template-columns: 5.6em minmax(0, 1fr) 3.4em 3.2em; gap: 8px; } .age .name { font-size: 14px; } .age .cnt { font-size: 18px; } }
+.small-btn { padding: 2px 10px; font-size: 12.5px; }
+.card.fold { padding: 10px 14px; }
+body.no-help .help, body.no-help .sec-head p, body.no-help .insightcard, body.no-help .card.fold { display: none !important; }
 .help { font-size: 13px; color: var(--muted); margin: 0; padding: 8px 12px; background: var(--bg); border-radius: 8px; }
 .help b { color: var(--ink); font-weight: 600; }
 .sec { display: flex; flex-direction: column; gap: 12px; scroll-margin-top: 16px; }
@@ -209,6 +206,7 @@ body.present .present-nav { display: flex; justify-content: space-between; align
     </div>
     <div class="meta hide-present">
       <span class="live" id="live"><i></i><span id="liveText">불러오는 중</span></span>
+      <button class="btn" id="helpBtn" type="button" aria-pressed="false">해설 숨기기</button>
       <button class="btn" id="refreshBtn" type="button">지금 새로고침</button>
       <button class="btn primary" id="presentBtn" type="button">발표 모드</button>
     </div>
@@ -662,28 +660,31 @@ function render() {
   const ageCol = cls.singles.find((c) => c.name === (hints.ageColumn || "")) || cls.singles.find((c) => /연령|나이|^age$/i.test(c.name));
   let ageCard = "";
   if (ageCol) {
-    const target = Math.max(1, +CFG.ageTarget || 30);
     const counts = new Map(countValues(ageCol.vals).items.map((x) => [x.k, x.c]));
     const groups = (ORD[ageCol.name] || [...counts.keys()]).filter((k) => counts.has(k) || !/응답 안 함|무응답/.test(k));
-    const scaleMax = Math.max(target * 1.15, ...[...counts.values()]);
+    const total = [...counts.values()].reduce((a, b) => a + b, 0);
+    const maxC = Math.max(1, ...counts.values());
+    const real = groups.filter((k) => !/응답 안 함|무응답/.test(k)).map((k) => ({ k, c: counts.get(k) || 0 }));
+    const most = real.slice().sort((a, b) => b.c - a.c)[0], least = real.slice().sort((a, b) => a.c - b.c)[0];
     const rowsH = groups.map((k) => {
-      const c = counts.get(k) || 0, skip = /응답 안 함|무응답/.test(k);
-      const st = skip ? "na" : c >= target ? "ok" : c >= target * 0.5 ? "low" : "crit";
-      const pill = skip ? `<span class="pill na">목표 없음</span>` : st === "ok" ? `<span class="pill ok">목표 달성</span>` : `<span class="pill ${st}">${target - c}명 더 필요</span>`;
-      return { k, c, st, html: `<div class="age ${st}"><span class="name">${esc(k)}</span><span class="trk" title="${c}명 / 목표 ${target}명"><span class="fill" style="width:${(c / scaleMax) * 100}%"></span><span class="goal" style="left:${(target / scaleMax) * 100}%"></span></span><span class="cnt">${c}<small>명</small></span>${pill}</div>` };
+      const c = counts.get(k) || 0;
+      const cls2 = most && k === most.k ? " most" : least && k === least.k && c < maxC ? " least" : "";
+      return `<div class="age${cls2}"><span class="name">${esc(k)}</span><span class="trk" title="${c}명"><span class="fill" style="width:${(c / maxC) * 100}%"></span></span><span class="cnt">${c}<small>명</small></span><span class="share num">${pct(c, total)}%</span></div>`;
     });
-    const lacking = rowsH.filter((r) => r.st === "crit" || r.st === "low").sort((a, b) => a.c - b.c);
-    const headline = lacking.length
-      ? `<span class="headline">가장 부족한 연령대는 ${lacking.slice(0, 3).map((r) => `<b>${esc(r.k)}</b>(${r.c}명)`).join(", ")}입니다.</span>`
-      : `<span class="headline ok"><b>모든 연령대가 목표(${target}명)를 채웠습니다.</b></span>`;
-    if (lacking.length) insights.unshift(`응답이 가장 부족한 연령대는 <b>${esc(lacking[0].k)}</b>(${lacking[0].c}명)입니다. 목표 ${target}명까지 ${target - lacking[0].c}명 더 필요합니다.`);
-    ageCard = card("연령대별 응답자 수", ageCol.vals.filter(Boolean).length, `<div class="ages">${rowsH.map((r) => r.html).join("")}</div>`, {
+    const headline = most && least && most.k !== least.k
+      ? `응답자는 <b>${esc(most.k)}</b>가 가장 많고(${most.c}명 · ${pct(most.c, total)}%), <b class="lo">${esc(least.k)}</b>이(가) 가장 적습니다(${least.c}명 · ${pct(least.c, total)}%).`
+      : "";
+    if (headline) insights.unshift(headline);
+    ageCard = card("연령대별 응답자 수", total, `<div class="ages">${rowsH.join("")}</div>`, {
       wide: true, noChip: true, cls: "agecard", h2: true, take: headline, nLabel: `총 <span class="num">${N}</span>명`,
-      help: `점선이 목표(연령대별 <b>${target}명</b>)예요. 막대가 점선을 넘으면 목표 달성, 못 미치면 부족이에요. 30명보다 적으면 그 연령대만 따로 볼 때 결과가 크게 흔들려요.`,
+      help: `막대가 길수록 그 연령대 응답자가 많아요. 오른쪽 %는 전체 응답자 중 비율이에요. <b>파란 막대</b>가 가장 많은 연령대, <b>주황 막대</b>가 가장 적은 연령대예요.`,
     });
   }
 
-  const insightCard = card("한눈에 보는 핵심", N, `<ul class="insights">${insights.slice(0, 7).map((s) => `<li>${s}</li>`).join("")}</ul><p class="muted small">새 응답이 들어올 때마다 다시 계산됩니다. 점수 평균에는 ‘판단하기 어려움(?)’ 답을 넣지 않았습니다.</p>`, { wide: true, noChip: true });
+  const insightBody = `<ul class="insights">${insights.slice(0, 7).map((s) => `<li>${s}</li>`).join("")}</ul><p class="muted small">새 응답이 들어올 때마다 다시 계산됩니다. 점수 평균에는 ‘판단하기 어려움(?)’ 답을 넣지 않았습니다.</p>`;
+  const insightCard = state.hideInsight
+    ? `<div class="card wide fold hide-present"><button class="btn" id="insightShow" type="button" aria-expanded="false">＋ 한눈에 보는 핵심 보기</button></div>`
+    : card("한눈에 보는 핵심", N, insightBody, { wide: true, noChip: true, cls: "insightcard", nLabel: `<button class="btn small-btn hide-present" id="insightHide" type="button" aria-expanded="true">숨기기</button>` });
   const timelineCard = top[0];
   const crossCard = top.find((h) => h.includes("교차 분석")) || "";
   canvasCards.sort((a, b) => a.order - b.order);
@@ -739,6 +740,8 @@ function bindApp() {
   on("#fCol", "change", (e) => { state.filterCol = e.target.value; state.filterVal = ""; render(); });
   on("#fVal", "change", (e) => { state.filterVal = e.target.value; render(); });
   on("#fClear", "click", () => { state.filterCol = ""; state.filterVal = ""; render(); });
+  on("#insightHide", "click", () => { state.hideInsight = true; prefs("hideInsight", true); render(); });
+  on("#insightShow", "click", () => { state.hideInsight = false; prefs("hideInsight", false); render(); });
   on("#cA", "change", (e) => { state.crossA = e.target.value; render(); });
   on("#cB", "change", (e) => { state.crossB = e.target.value; render(); });
   document.querySelectorAll("[data-series]").forEach((b) => b.addEventListener("click", () => {
@@ -818,6 +821,11 @@ $("#exitBtn").onclick = () => setPresent(false);
 $("#prevBtn").onclick = () => { state.slide--; showSlide(); };
 $("#nextBtn").onclick = () => { state.slide++; showSlide(); };
 $("#refreshBtn").onclick = () => load(state.sheet, true);
+// 해설(읽는 법·묶음 설명·핵심 요약) 숨기기 — 이 브라우저에 기억됩니다.
+function prefs(k, v) { try { if (v === undefined) return localStorage.getItem("survey-dash-" + k) === "1"; localStorage.setItem("survey-dash-" + k, v ? "1" : "0"); } catch (e) { return false; } }
+function applyHelp() { const off = state.hideHelp; document.body.classList.toggle("no-help", off); const b = $("#helpBtn"); b.textContent = off ? "해설 보기" : "해설 숨기기"; b.setAttribute("aria-pressed", off); }
+state.hideHelp = prefs("hideHelp"); state.hideInsight = prefs("hideInsight"); applyHelp();
+$("#helpBtn").onclick = () => { state.hideHelp = !state.hideHelp; prefs("hideHelp", state.hideHelp); applyHelp(); };
 document.addEventListener("keydown", (e) => {
   if (!document.body.classList.contains("present")) return;
   if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") { state.slide++; showSlide(); e.preventDefault(); }
