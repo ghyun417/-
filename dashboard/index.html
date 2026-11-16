@@ -187,12 +187,15 @@ body.present .present-nav { display: flex; justify-content: space-between; align
 <div id="toast" class="toast" hidden></div>
 
 <script src="config.js"></script>
+<script src="schema.js"></script>
 <script>
 "use strict";
 /* ------------------------------------------------------------------
    설정
 ------------------------------------------------------------------ */
-const CFG = Object.assign({ title: "설문 응답 현황", sheets: [{ name: "응답", csv: "" }], endDate: "", goal: 0, refreshSeconds: 60 }, window.DASHBOARD_CONFIG || {});
+const CFG = Object.assign({ title: "설문 응답 현황", sheets: [{ name: "응답", csv: "" }], endDate: "", goal: 0, refreshSeconds: 60, excludeTest: true }, window.DASHBOARD_CONFIG || {});
+const SCHEMA = window.SURVEY_SCHEMA || null;
+const TEST_RE = /테스트|test/i;
 const params = new URLSearchParams(location.search);
 if (params.get("csv")) CFG.sheets = [{ name: params.get("name") || "응답", csv: params.get("csv") }];
 const LS_KEY = "survey-dash-links";
@@ -254,18 +257,20 @@ const dayKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,
 /* ------------------------------------------------------------------
    열 종류 자동 판별
 ------------------------------------------------------------------ */
-const NA_RE = /^(n\/?a|na|해당\s*없음|판단\s*어려움|모름|-|응답하지 않음)$/i;
+const NA_RE = /^(n\/?a|na|\?|해당\s*없음|판단\s*어려움|모름|-|응답하지 않음)$/i;
 const isNum = (v) => /^-?\d+(\.\d+)?$/.test(String(v).trim());
 
-function classify(headers, rows) {
+function classify(headers, rows, hints = {}) {
   const cols = headers.map((h, i) => ({ i, name: h, vals: rows.map((r) => (r[i] || "").trim()) }));
   const out = { time: null, singles: [], multis: [], numerics: [], texts: [], grids: [] };
   const gridMap = new Map();
   for (const c of cols) {
     const ne = c.vals.filter((v) => v !== "");
     if (!c.name.trim() || ne.length === 0) continue;
+    if (hints.multi && hints.multi.has(c.name)) { out.multis.push(c); continue; }
+    if (hints.text && hints.text.has(c.name)) { out.texts.push(c); continue; }
     const dates = ne.filter((v) => parseDate(v)).length;
-    if (!out.time && (dates / ne.length > 0.9) && (/타임스탬프|timestamp|시간|일시|제출|날짜|date|time/i.test(c.name) || c.i === 0)) { out.time = c; continue; }
+    if (!out.time && (dates / ne.length > 0.9) && (/타임스탬프|timestamp|시간|시각|일시|제출|날짜|date|time/i.test(c.name) || c.i === 0)) { out.time = c; continue; }
     if (/^(응답자\s*)?id$|아이디|이메일|email|응답자 id/i.test(c.name.trim()) && new Set(ne).size > ne.length * 0.8) continue;
     const g = c.name.match(/^(.*?)\s*\[(.+?)\]\s*$/);
     if (g) { const key = g[1].trim(); if (!gridMap.has(key)) gridMap.set(key, []); gridMap.get(key).push(Object.assign(c, { row: g[2].trim() })); continue; }
@@ -311,6 +316,11 @@ function countValues(vals, multi) {
   const items = [...m.entries()].map(([k, c]) => ({ k, c })).sort((a, b) => b.c - a.c);
   return { n, items };
 }
+function orderItems(items, order) {
+  if (!order) return items;
+  const pos = (k) => { const i = order.indexOf(k); return i < 0 ? 999 : i; };
+  return items.slice().sort((a, b) => pos(a.k) - pos(b.k) || b.c - a.c);
+}
 function sortScaleItems(items) {
   const allNum = items.every((x) => isNum(x.k));
   return allNum ? items.slice().sort((a, b) => +a.k - +b.k) : items;
@@ -354,11 +364,15 @@ const SERIES = ["#1b6b8f", "#c2621b", "#2c7a4b", "#7a4fa3", "#b0365c", "#4f6d1f"
 ------------------------------------------------------------------ */
 function timelineSVG(dates) {
   if (!dates.length) return `<p class="muted small">제출 시각 열을 찾지 못해 추이를 그릴 수 없습니다.</p>`;
-  const counts = new Map(); dates.forEach((d) => counts.set(dayKey(d), (counts.get(dayKey(d)) || 0) + 1));
-  const first = new Date(Math.min(...dates)); first.setHours(0, 0, 0, 0);
-  const lastD = new Date(Math.max(Date.now(), ...dates)); lastD.setHours(0, 0, 0, 0);
-  const days = []; for (let d = new Date(first); d <= lastD; d.setDate(d.getDate() + 1)) days.push(new Date(d));
-  let cum = 0; const pts = days.map((d) => { const c = counts.get(dayKey(d)) || 0; cum += c; return { d, c, cum }; });
+  // 응답 기간이 3일 미만이면 시간 단위, 그 이상이면 하루 단위로 묶습니다.
+  const hourly = Math.max(...dates) - Math.min(...dates) < 3 * 864e5;
+  const key = hourly ? (d) => dayKey(d) + " " + d.getHours() : dayKey;
+  const counts = new Map(); dates.forEach((d) => counts.set(key(d), (counts.get(key(d)) || 0) + 1));
+  const first = new Date(Math.min(...dates)); if (hourly) first.setMinutes(0, 0, 0); else first.setHours(0, 0, 0, 0);
+  const lastD = new Date(Math.max(Date.now(), ...dates)); if (hourly) lastD.setMinutes(0, 0, 0); else lastD.setHours(0, 0, 0, 0);
+  const days = []; for (let d = new Date(first); d <= lastD; hourly ? d.setHours(d.getHours() + 1) : d.setDate(d.getDate() + 1)) days.push(new Date(d));
+  let cum = 0; const pts = days.map((d) => { const c = counts.get(key(d)) || 0; cum += c; return { d, c, cum }; });
+  const unit = hourly ? "시간별" : "일별";
   const W = 900, H = 260, L = 40, R = 56, T = 16, B = 34, BH = 46;
   const iw = W - L - R, ih = H - T - B - BH - 10;
   const maxCum = Math.max(1, cum), maxC = Math.max(1, ...pts.map((p) => p.c));
@@ -376,10 +390,10 @@ function timelineSVG(dates) {
     <path class="area" d="${area}"/><path class="ln" d="${line}"/>
     <circle class="dot" cx="${x(pts.length - 1)}" cy="${y(last.cum)}" r="4"/>
     <text class="endlab" x="${x(pts.length - 1) + 8}" y="${y(last.cum) + 4}">${last.cum}</text>
-    <text x="${W - R}" y="${by0 - BH + 4}" text-anchor="end">일별 응답 (최대 ${maxC}건)</text>
-    ${pts.map((p, i) => `<rect class="dbar" x="${(x(i) - bw / 2).toFixed(1)}" y="${(by0 - (p.c / maxC) * (BH - 12)).toFixed(1)}" width="${bw.toFixed(1)}" height="${((p.c / maxC) * (BH - 12)).toFixed(1)}"><title>${dayKey(p.d)}: ${p.c}건</title></rect>`).join("")}
+    <text x="${W - R}" y="${by0 - BH + 4}" text-anchor="end">${unit} 응답 (최대 ${maxC}건)</text>
+    ${pts.map((p, i) => `<rect class="dbar" x="${(x(i) - bw / 2).toFixed(1)}" y="${(by0 - (p.c / maxC) * (BH - 12)).toFixed(1)}" width="${bw.toFixed(1)}" height="${((p.c / maxC) * (BH - 12)).toFixed(1)}"><title>${dayKey(p.d)}${hourly ? ` ${p.d.getHours()}시` : ""}: ${p.c}건</title></rect>`).join("")}
     <line class="ax" x1="${L}" x2="${W - R}" y1="${by0}" y2="${by0}"/>
-    ${pts.map((p, i) => (i % step === 0 || i === pts.length - 1) ? `<text x="${x(i)}" y="${H - 14}" text-anchor="middle">${p.d.getMonth() + 1}/${p.d.getDate()}</text>` : "").join("")}
+    ${pts.map((p, i) => (i % step === 0 || i === pts.length - 1) ? `<text x="${x(i)}" y="${H - 14}" text-anchor="middle">${hourly ? (p.d.getHours() === 0 || i === 0 ? `${p.d.getMonth() + 1}/${p.d.getDate()} ` : "") + p.d.getHours() + "시" : `${p.d.getMonth() + 1}/${p.d.getDate()}`}</text>` : "").join("")}
   </svg>`;
 }
 function niceTicks(max, n) {
@@ -390,13 +404,13 @@ function niceTicks(max, n) {
 /* ------------------------------------------------------------------
    전략캔버스 (같은 비교 대상을 여러 요소로 평가한 표가 있을 때)
 ------------------------------------------------------------------ */
-function findCanvas(grids) {
-  const numeric = grids.filter((g) => g.numeric && !/전반|overall|종합|만족/i.test(g.name));
+function findCanvases(grids) {
+  const numeric = grids.filter((g) => g.numeric && g.max <= 5 && !/전반|overall|종합|만족/i.test(g.name));
   const byLabels = new Map();
   for (const g of numeric) { const key = g.cols.map((c) => c.row).join("|"); if (!byLabels.has(key)) byLabels.set(key, []); byLabels.get(key).push(g); }
-  let best = null; for (const gs of byLabels.values()) if (gs.length >= 2 && (!best || gs.length > best.length)) best = gs;
-  return best;
+  return [...byLabels.values()].filter((gs) => gs.length >= 2);
 }
+const shortName = (n) => n.replace(/^(Q\d+|II\s*-?\s*\d+)\s*[·.]?\s*/, "");
 function canvasSVG(groups, labels, means, on) {
   const W = 900, H = 330, L = 60, R = 52, T = 14, B = 64;
   const iw = W - L - R, ih = H - T - B;
@@ -407,7 +421,7 @@ function canvasSVG(groups, labels, means, on) {
   const ticks = []; for (let v = Math.ceil(lo); v <= hi; v++) ticks.push(v);
   let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="요소별 평균 점수 비교">`;
   s += ticks.map((t) => `<line class="ax" x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}"/><text x="${L - 8}" y="${y(t) + 4}" text-anchor="end">${t}</text>`).join("");
-  s += groups.map((g, i) => { const ls = wrapLabel(g.name.replace(/^II\s*-?\s*\d+\s*/, ""), 7); return `<text x="${x(i)}" y="${H - B + 18}" text-anchor="middle">${ls.map((l, k) => `<tspan x="${x(i)}" dy="${k ? 14 : 0}">${esc(l)}</tspan>`).join("")}</text>`; }).join("");
+  s += groups.map((g, i) => { const ls = wrapLabel(shortName(g.name), 7); return `<text x="${x(i)}" y="${H - B + 18}" text-anchor="middle">${ls.map((l, k) => `<tspan x="${x(i)}" dy="${k ? 14 : 0}">${esc(l)}</tspan>`).join("")}</text>`; }).join("");
   const order = labels.map((_, li) => li).sort((a, b) => (on.has(a) ? 1 : 0) - (on.has(b) ? 1 : 0));
   for (const li of order) {
     const active = on.has(li), col = SERIES[li % SERIES.length];
@@ -426,15 +440,16 @@ function render() {
   const D = state.data[state.sheet];
   const app = $("#app");
   if (!D) { app.innerHTML = `<p class="muted">불러오는 중…</p>`; return; }
-  if (D.error && !D.headers) { app.innerHTML = setupHTML(D.error); bindSetup(); return; }
+  if (D.error && !D.headers) { $("#banner").innerHTML = ""; app.innerHTML = setupHTML(D.error); bindSetup(); return; }
 
   const { headers } = D;
+  const hints = D.hints || {};
+  const ORD = hints.order || {};
   let rows = D.rows;
-  const cls0 = classify(headers, rows);
-  // 필터
+  const cls0 = classify(headers, rows, hints);
   const filterable = cls0.singles.filter((c) => countValues(c.vals).items.length <= 15);
   if (state.filterCol && state.filterVal) { const fi = headers.indexOf(state.filterCol); if (fi >= 0) rows = rows.filter((r) => (r[fi] || "").trim() === state.filterVal); }
-  const cls = rows === D.rows ? cls0 : classify(headers, rows);
+  const cls = rows === D.rows ? cls0 : classify(headers, rows, hints);
   const N = rows.length;
   const dates = cls.time ? cls.time.vals.map(parseDate).filter(Boolean) : [];
 
@@ -447,148 +462,170 @@ function render() {
   const perDay = firstD ? N / elapsedDays : 0;
   const end = CFG.endDate ? new Date(CFG.endDate + "T23:59:59") : null;
   const daysLeft = end ? Math.max(0, Math.ceil((end - now) / 864e5)) : null;
-  const projected = end && firstD ? Math.round(N + perDay * Math.max(0, (end - now) / 864e5)) : null;
-  const ago = lastD ? timeAgo(lastD) : "-";
-  let kpis = `<div class="kpis">
-    <div class="kpi hero"><span class="label">총 응답</span><span class="value">${N.toLocaleString()}</span><span class="sub">${state.filterVal ? `필터 적용 · 전체 ${D.rows.length}건` : CFG.goal ? `목표 ${CFG.goal}건의 ${pct(N, CFG.goal)}%` : "건"}</span></div>
+  const projected = end && firstD && (now - firstD) >= 2 * 864e5 ? Math.round(N + perDay * Math.max(0, (end - now) / 864e5)) : null;
+  const subTotal = state.filterVal ? `필터 적용 · 전체 ${D.rows.length}건` : CFG.goal ? `목표 ${CFG.goal}건의 ${pct(N, CFG.goal)}%` : D.excluded ? `테스트 응답 ${D.excluded}건 제외` : "건";
+  const kpis = `<div class="kpis">
+    <div class="kpi hero"><span class="label">총 응답</span><span class="value">${N.toLocaleString()}</span><span class="sub">${subTotal}</span></div>
     <div class="kpi"><span class="label">오늘</span><span class="value">+${todayN}</span><span class="sub">${now.getMonth() + 1}월 ${now.getDate()}일</span></div>
     <div class="kpi"><span class="label">하루 평균</span><span class="value">${perDay ? perDay.toFixed(1) : "-"}</span><span class="sub">첫 응답 이후</span></div>
-    <div class="kpi"><span class="label">마지막 응답</span><span class="value" style="font-size:22px">${ago}</span><span class="sub">${lastD ? `${lastD.getMonth() + 1}/${lastD.getDate()} ${String(lastD.getHours()).padStart(2, "0")}:${String(lastD.getMinutes()).padStart(2, "0")}` : ""}</span></div>
+    <div class="kpi"><span class="label">마지막 응답</span><span class="value" style="font-size:22px">${lastD ? timeAgo(lastD) : "-"}</span><span class="sub">${lastD ? `${lastD.getMonth() + 1}/${lastD.getDate()} ${String(lastD.getHours()).padStart(2, "0")}:${String(lastD.getMinutes()).padStart(2, "0")}` : ""}</span></div>
     ${end ? `<div class="kpi"><span class="label">마감까지</span><span class="value">D-${daysLeft}</span><span class="sub">${CFG.endDate.slice(5).replace("-", "/")} 마감</span></div>` : ""}
-    ${projected != null ? `<div class="kpi"><span class="label">마감 시 예상</span><span class="value">≈${projected}</span><span class="sub">지금 속도 유지 시</span></div>` : ""}
+    ${end ? `<div class="kpi"><span class="label">마감 시 예상</span><span class="value">${projected != null ? "≈" + projected : "-"}</span><span class="sub">${projected != null ? "지금 속도 유지 시" : "수집 2일째부터 계산"}</span></div>` : ""}
   </div>`;
 
-  // ---- filter + cross controls
   const opt = (v, cur, label) => `<option value="${esc(v)}"${v === cur ? " selected" : ""}>${esc(label ?? v)}</option>`;
-  const fcVals = state.filterCol ? countValues(cls0.singles.find((c) => c.name === state.filterCol)?.vals || []).items : [];
-  const filters = filterable.length ? `<div class="filters hide-present"><span class="muted">응답자 거르기</span>
-    <select id="fCol" aria-label="거를 문항">${opt("", state.filterCol, "전체 응답자")}${filterable.map((c) => opt(c.name, state.filterCol)).join("")}</select>
+  const fcCol = cls0.singles.find((c) => c.name === state.filterCol);
+  const fcVals = fcCol ? orderItems(countValues(fcCol.vals).items, ORD[fcCol.name]) : [];
+  const filters = filterable.length ? `<div class="filters hide-present"><label for="fCol" class="muted">응답자 거르기</label>
+    <select id="fCol">${opt("", state.filterCol, "전체 응답자")}${filterable.map((c) => opt(c.name, state.filterCol)).join("")}</select>
     ${state.filterCol ? `<select id="fVal" aria-label="거를 값">${opt("", state.filterVal, "값 선택")}${fcVals.map((x) => opt(x.k, state.filterVal, `${x.k} (${x.c})`)).join("")}</select>` : ""}
     ${state.filterVal ? `<button class="btn" id="fClear" type="button">필터 해제</button>` : ""}</div>` : "";
 
-  // ---- cards
-  const cards = [];
-  cards.push(card("응답 추이", N, timelineSVG(dates), { wide: true, noChip: true, nLabel: `누적 <span class="num">${N}</span>건`, take: perDay ? `하루 평균 <b>${perDay.toFixed(1)}건</b>씩 들어오고 있습니다${projected != null ? `. 이 속도면 마감일까지 약 <b>${projected}건</b>이 모입니다.` : "."}` : "" }));
-
+  const top = [];      // 맨 위 고정 카드
+  const qcards = [];   // 문항 카드 (설문 순서대로 정렬)
   const insights = [];
-  if (N) insights.push(`지금까지 <b>${N}명</b>이 응답했습니다${todayN ? ` (오늘 ${todayN}명)` : ""}.`);
+  top.push(card("응답 추이", N, timelineSVG(dates), { wide: true, noChip: true, nLabel: `누적 <span class="num">${N}</span>건`, take: perDay ? `하루 평균 <b>${perDay.toFixed(1)}건</b>씩 들어오고 있습니다${projected != null ? `. 이 속도면 마감일까지 약 <b>${projected}건</b>이 모입니다.` : "."}` : "" }));
+  if (N) insights.push(`지금까지 <b>${N}명</b>이 응답했습니다${todayN ? ` (오늘 ${todayN}명)` : ""}${D.excluded ? `. 테스트 응답 ${D.excluded}건은 뺐습니다` : ""}.`);
   if (N && N < 30) insights.push(`응답이 30건 미만이라 비율이 크게 흔들릴 수 있습니다. 해석은 참고용으로만 하세요.`);
 
-  // 전략캔버스
-  const canvas = findCanvas(cls.grids);
-  const canvasSet = new Set(canvas || []);
-  if (canvas) {
+  // ---- 전략캔버스
+  const canvases = findCanvases(cls.grids);
+  const inCanvas = new Set(canvases.flat());
+  const canvasCards = [];
+  canvases.forEach((canvas, ci) => {
     const labels = canvas[0].cols.map((c) => c.row);
-    const means = canvas.map((g) => g.cols.map((c) => numStats(c.vals).mean));
-    const ns = canvas.map((g) => g.cols.map((c) => numStats(c.vals).n));
-    if (!state.canvasOn) state.canvasOn = new Set([0]);
-    const on = state.canvasOn;
-    const legend = `<div class="legend">${labels.map((l, i) => `<button type="button" data-series="${i}" aria-pressed="${on.has(i)}"><i style="background:${SERIES[i % SERIES.length]}"></i>${esc(l)}</button>`).join("")}</div>`;
+    const stats = canvas.map((g) => g.cols.map((c) => numStats(c.vals)));
+    const means = stats.map((r) => r.map((s) => s.mean));
+    const ns = stats.map((r) => r.map((s) => s.n));
+    if (!state.canvasOn) state.canvasOn = {};
+    if (!state.canvasOn[ci]) state.canvasOn[ci] = new Set([0]);
+    const on = state.canvasOn[ci];
+    const prefix = (canvas[0].name.match(/^(Q\d+)/) || [])[1];
+    const title = (hints.canvasTitles && hints.canvasTitles[prefix]) || "요소별 평균 비교 (전략캔버스)";
+    const legend = `<div class="legend">${labels.map((l, i) => `<button type="button" data-canvas="${ci}" data-series="${i}" aria-pressed="${on.has(i)}"><i style="background:${SERIES[i % SERIES.length]}"></i>${esc(l)}</button>`).join("")}</div>`;
     const allMeans = means.flat().filter((v) => !isNaN(v));
+    if (!allMeans.length) return;
     const lo = Math.min(...allMeans), hi = Math.max(...allMeans);
-    const table = `<div class="tblwrap"><table><thead><tr><th>요소</th>${labels.map((l) => `<th>${esc(l)}</th>`).join("")}</tr></thead><tbody>${canvas.map((g, gi) => {
-      const rowMax = Math.max(...means[gi].filter((v) => !isNaN(v)));
-      return `<tr><td>${esc(g.name)}</td>${means[gi].map((v, li) => isNaN(v) ? `<td class="muted">-</td>` : `<td class="heat" style="${heatColor(hi > lo ? (v - lo) / (hi - lo) : 0.5)}" title="응답 ${ns[gi][li]}건">${fmt1(v)}${v === rowMax ? " ▲" : ""}</td>`).join("")}</tr>`;
-    }).join("")}</tbody></table></div><p class="muted small">칸 = 평균 점수(N/A 제외). ▲ = 그 요소에서 가장 높은 대상. 칸에 마우스를 올리면 응답 수가 보입니다.</p>`;
-    // 기준 대상(첫 번째)의 순위
+    const table = `<div class="tblwrap"><table><thead><tr><th>기준</th>${labels.map((l) => `<th>${esc(l)}</th>`).join("")}</tr></thead><tbody>${canvas.map((g, gi) => {
+      const ok = means[gi].filter((v) => !isNaN(v)); const rowMax = ok.length ? Math.max(...ok) : NaN;
+      return `<tr><td>${esc(shortName(g.name))}</td>${means[gi].map((v, li) => isNaN(v) ? `<td class="muted">-</td>` : `<td class="heat" style="${heatColor(hi > lo ? (v - lo) / (hi - lo) : 0.5)}" title="응답 ${ns[gi][li]}건">${fmt1(v)}${v === rowMax ? " ▲" : ""}</td>`).join("")}</tr>`;
+    }).join("")}</tbody><tfoot><tr><td class="muted small">평가한 사람 수</td>${labels.map((_, li) => `<td class="num muted small">${Math.max(...ns.map((r) => r[li]))}</td>`).join("")}</tr></tfoot></table></div><p class="muted small">칸 = 평균 점수(? 판단 어려움과 '잘 모름' 제외). ▲ = 그 기준에서 가장 높은 대상. 범례를 눌러 비교할 대상을 켜고 끌 수 있습니다.</p>`;
     const ref = labels[0];
-    const wins = canvas.filter((g, gi) => { const v = means[gi][0]; return !isNaN(v) && v === Math.max(...means[gi].filter((x) => !isNaN(x))); }).length;
-    const above = canvas.filter((g, gi) => { const v = means[gi][0]; const avg = means[gi].filter((x) => !isNaN(x)); return !isNaN(v) && v >= avg.reduce((a, b) => a + b, 0) / avg.length; }).length;
-    const gaps = canvas.map((g, gi) => ({ name: g.name, gap: means[gi][0] - Math.max(...means[gi].slice(1).filter((x) => !isNaN(x))) })).filter((x) => !isNaN(x.gap)).sort((a, b) => a.gap - b.gap);
-    const take = `<b>${esc(ref)}</b>은(는) ${canvas.length}개 요소 중 <b>${wins}개</b>에서 1위, <b>${above}개</b>에서 평균 이상입니다.${gaps.length ? ` 가장 뒤처진 요소는 <b>${esc(gaps[0].name)}</b>(1위와 ${fmt1(Math.abs(Math.min(0, gaps[0].gap)))}점 차)입니다.` : ""}`;
+    const valid = canvas.map((g, gi) => ({ g, gi, v: means[gi][0], others: means[gi].filter((x, li) => li && !isNaN(x)) })).filter((x) => !isNaN(x.v) && x.others.length);
+    const wins = valid.filter((x) => x.v >= Math.max(...x.others)).length;
+    const above = valid.filter((x) => x.v >= (x.others.reduce((a, b) => a + b, 0) + x.v) / (x.others.length + 1)).length;
+    const gaps = valid.map((x) => ({ name: shortName(x.g.name), gap: x.v - Math.max(...x.others) })).sort((a, b) => a.gap - b.gap);
+    const best = gaps.length ? gaps[gaps.length - 1] : null;
+    let take = `<b>${esc(ref)}</b>은(는) ${valid.length}개 기준 중 <b>${wins}개</b>에서 1위, <b>${above}개</b>에서 평균 이상입니다.`;
+    if (gaps.length && gaps[0].gap < 0) take += ` 가장 뒤처진 기준은 <b>${esc(gaps[0].name)}</b>(1위와 ${fmt1(-gaps[0].gap)}점 차)`;
+    if (best && best.gap > 0) take += `${gaps[0].gap < 0 ? "," : ""} 가장 앞선 기준은 <b>${esc(best.name)}</b>(2위보다 ${fmt1(best.gap)}점 높음)`;
+    take += gaps.length && (gaps[0].gap < 0 || (best && best.gap > 0)) ? "입니다." : "";
     insights.push(take);
-    cards.push(card("요소별 평균 비교 (전략캔버스)", Math.max(...ns.flat()), legend + canvasSVG(canvas, labels, means, on) + table, { wide: true, take, nLabel: `대상 ${labels.length}개 × 요소 ${canvas.length}개` }));
-  }
+    canvasCards.push({ order: canvas[0].cols[0].i, html: card(title, Math.max(...ns.flat()), legend + canvasSVG(canvas, labels, means, on) + table, { wide: true, take, nLabel: `대상 ${labels.length}개 × 기준 ${canvas.length}개` }) });
+  });
 
-  // 표형 문항 (캔버스에 들어가지 않은 것)
+  // ---- 표형 문항
   for (const g of cls.grids) {
-    if (canvasSet.has(g)) continue;
+    if (inCanvas.has(g)) continue;
     const rowsLbl = g.cols.map((c) => c.row);
     const respN = rows.filter((r) => g.cols.some((c) => (r[c.i] || "").trim())).length;
+    if (!respN) continue;
     const rankRows = rowsLbl.every((l) => /^\d+\s*(순위|위)$|^(1st|2nd|3rd|\d+th)$/i.test(l));
+    const order = g.cols[0].i;
     if (g.numeric) {
       const st = g.cols.map((c) => ({ row: c.row, ...numStats(c.vals) }));
       const valid = st.filter((s) => s.n);
       const best = valid.slice().sort((a, b) => b.mean - a.mean)[0];
       const worst = valid.slice().sort((a, b) => a.mean - b.mean)[0];
-      const top = Math.max(g.max, 5);
-      const body = `<div class="tblwrap"><table><thead><tr><th>대상</th><th>평균</th><th></th><th>응답</th><th>N/A</th></tr></thead><tbody>${st.map((s) => `<tr${s === best ? ' class="hl"' : ""}><td>${esc(s.row)}</td><td class="heat">${s.n ? fmt1(s.mean) : "-"}</td><td style="text-align:left;width:40%">${s.n ? `<span class="meanbar" style="width:${(s.mean / top) * 100}%"></span>` : ""}</td><td class="num">${s.n}</td><td class="num muted">${s.na}</td></tr>`).join("")}</tbody></table></div>`;
+      const topV = g.max > 5 ? 10 : 5;
+      const body = `<div class="tblwrap"><table><thead><tr><th>대상</th><th>평균</th><th></th><th>응답</th><th>?·N/A</th></tr></thead><tbody>${st.map((s) => `<tr${s === best ? ' class="hl"' : ""}><td>${esc(s.row)}</td><td class="heat">${s.n ? fmt1(s.mean) : "-"}</td><td style="text-align:left;width:40%">${s.n ? `<span class="meanbar" style="width:${(s.mean / topV) * 100}%"></span>` : ""}</td><td class="num">${s.n}</td><td class="num muted">${s.na}</td></tr>`).join("")}</tbody></table></div><p class="muted small">막대 끝 = ${topV}점 만점</p>`;
       const take = best && worst && best !== worst ? `가장 높은 평가는 <b>${esc(best.row)}</b>(${fmt1(best.mean)}점), 가장 낮은 평가는 <b>${esc(worst.row)}</b>(${fmt1(worst.mean)}점)입니다.` : "";
-      if (take && /전반|overall|종합|만족/i.test(g.name)) insights.push(`${esc(g.name)}: ${take}`);
-      cards.push(card(g.name, respN, body, { take, wide: g.cols.length > 6 }));
+      if (take) insights.push(`${esc(g.name.replace(/\s*\(.*\)$/, ""))}: ${take}`);
+      qcards.push({ order, html: card(g.name, respN, body, { take, wide: g.cols.length > 6 }) });
     } else {
-      const opts = [...new Set(g.cols.flatMap((c) => c.vals.filter(Boolean)))];
-      const counts = g.cols.map((c) => opts.map((o) => c.vals.filter((v) => v === o).length));
-      const max = Math.max(1, ...counts.flat());
+      const exclude = (hints.rowShareExclude || {})[g.name] || [];
+      const optsRaw = [...new Set(g.cols.flatMap((c) => c.vals.filter(Boolean)))];
+      const counts = g.cols.map((c) => optsRaw.map((o) => c.vals.filter((v) => v === o).length));
       let take = "", extra = "";
       if (rankRows) {
-        const w = opts.map((o, oi) => ({ k: o, c: counts.reduce((a, row, ri) => a + row[oi] * Math.max(1, rowsLbl.length - ri), 0) })).sort((a, b) => b.c - a.c);
-        const firsts = opts.map((o, oi) => ({ k: o, c: counts[0][oi] })).sort((a, b) => b.c - a.c);
+        const w = optsRaw.map((o, oi) => ({ k: o, c: counts.reduce((a, row, ri) => a + row[oi] * Math.max(1, rowsLbl.length - ri), 0) })).sort((a, b) => b.c - a.c);
+        const firsts = optsRaw.map((o, oi) => ({ k: o, c: counts[0][oi] })).sort((a, b) => b.c - a.c);
         take = `1순위로 가장 많이 고른 기준은 <b>${esc(firsts[0].k)}</b>(${firsts[0].c}명), 순위를 가중한 종합 1위는 <b>${esc(w[0].k)}</b>입니다.`;
-        extra = `<p class="muted small">가중 점수 = 1순위 ${rowsLbl.length}점, 2순위 ${rowsLbl.length - 1}점 …</p>` + barsHTML(w, w.reduce((a, b) => a + b.c, 0));
-        insights.push(take);
+        extra = `<p class="muted small" style="margin:0">가중 점수 = 1순위 ${rowsLbl.length}점, 2순위 ${rowsLbl.length - 1}점, 3순위 ${rowsLbl.length - 2}점. 막대의 % = 전체 점수 중 비중</p>` + barsHTML(w, w.reduce((a, b) => a + b.c, 0));
+        insights.push(`${esc(g.name.replace(/\s*\[.*$/, ""))}: ${take}`);
       }
-      const order = opts.map((o, oi) => ({ o, oi, t: counts.reduce((a, r) => a + r[oi], 0) })).sort((a, b) => b.t - a.t);
-      const heat = `<div class="tblwrap"><table><thead><tr><th>${rankRows ? "순위" : "행"}</th>${order.map((x) => `<th>${esc(x.o)}</th>`).join("")}</tr></thead><tbody>${g.cols.map((c, ri) => `<tr><td>${esc(c.row)}</td>${order.map((x) => `<td class="heat" style="${heatColor(counts[ri][x.oi] / max)}">${counts[ri][x.oi] || ""}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
-      cards.push(card(g.name, respN, extra + heat, { take, wide: true }));
+      const ord = ORD[g.name];
+      const order2 = optsRaw.map((o, oi) => ({ o, oi, t: counts.reduce((a, r) => a + r[oi], 0) }))
+        .sort((a, b) => ord ? ((ord.indexOf(a.o) + 1 || 999) - (ord.indexOf(b.o) + 1 || 999)) : b.t - a.t);
+      const shares = g.cols.map((c, ri) => { const tot = order2.filter((x) => !exclude.includes(x.o)).reduce((a, x) => a + counts[ri][x.oi], 0); return order2.map((x) => (exclude.includes(x.o) || !tot ? null : counts[ri][x.oi] / tot)); });
+      if (!rankRows && !take) {
+        const flat = []; g.cols.forEach((c, ri) => order2.forEach((x, k) => { if (shares[ri][k] != null && !/특별히 불편 없었음/.test(x.o)) flat.push({ row: c.row, o: x.o, p: shares[ri][k] }); }));
+        const topCell = flat.sort((a, b) => b.p - a.p)[0];
+        if (topCell && topCell.p > 0) { take = /Q5/.test(g.name) ? `가장 두드러진 칸은 <b>${esc(topCell.row)}</b> 단계의 <b>${esc(topCell.o)}</b>(${Math.round(topCell.p * 100)}%)입니다.` : `가장 두드러진 칸은 <b>${esc(topCell.row)}</b> → <b>${esc(topCell.o)}</b>(${Math.round(topCell.p * 100)}%)입니다.`; if (/Q5/.test(g.name)) insights.push(`효용 장애: ${take}`); }
+      }
+      const note = (hints.rowShareNote || {})[g.name] || "각 행에서 고른 비율";
+      const heat = `<div class="tblwrap"><table><thead><tr><th>${rankRows ? "순위" : ""}</th>${order2.map((x) => `<th>${esc(x.o)}</th>`).join("")}</tr></thead><tbody>${g.cols.map((c, ri) => `<tr><td>${esc(c.row)}</td>${order2.map((x, k) => { const p = shares[ri][k]; const cnt = counts[ri][x.oi]; return p == null ? `<td class="heat muted" title="${cnt}명">${cnt ? cnt + "명" : ""}</td>` : `<td class="heat" style="${heatColor(p)}" title="${cnt}명">${cnt ? Math.round(p * 100) + "%" : ""}</td>`; }).join("")}</tr>`).join("")}</tbody></table></div><p class="muted small">칸 = ${esc(note)}. 칸에 마우스를 올리면 사람 수가 보입니다.</p>`;
+      qcards.push({ order, html: card(g.name.replace(/\s*\[.*$/, ""), respN, extra + heat, { take, wide: true }) });
     }
   }
 
-  // 단일 선택
+  // ---- 단일 선택
   for (const c of cls.singles) {
     const { n, items } = countValues(c.vals);
     if (!n) continue;
-    const its = items.length > 12 ? [...items.slice(0, 11), { k: `기타 ${items.length - 11}개`, c: items.slice(11).reduce((a, b) => a + b.c, 0) }] : items;
+    let its = orderItems(items, ORD[c.name]);
+    if (its.length > 12) its = [...its.slice(0, 11), { k: `기타 ${its.length - 11}개`, c: its.slice(11).reduce((a, b) => a + b.c, 0) }];
     const t = items[0], share = pct(t.c, n);
     const take = items.length > 1 ? `<b>${esc(t.k)}</b>이(가) ${share}%로 가장 많습니다${share >= 50 ? " (과반)" : ""}.` : "";
-    if (items.length > 1 && n >= 5 && insights.length < 9) insights.push(`${esc(c.name)} → <b>${esc(t.k)}</b> ${share}%`);
-    cards.push(card(c.name, n, barsHTML(its, n), { take }));
+    if (items.length > 1 && n >= 5 && /^Q(3|16|17|2)\./.test(c.name)) insights.push(`${esc(c.name)} → <b>${esc(t.k)}</b> ${share}%`);
+    qcards.push({ order: c.i, html: card(c.name, n, barsHTML(its, n), { take }) });
   }
-  // 복수 선택
   for (const c of cls.multis) {
     const { n, items } = countValues(c.vals, true);
     if (!n) continue;
-    const take = `응답자의 <b>${pct(items[0].c, n)}%</b>가 <b>${esc(items[0].k)}</b>을(를) 골랐습니다. (복수 선택이라 합이 100%를 넘습니다)`;
-    cards.push(card(c.name, n, barsHTML(items.slice(0, 15), n), { take }));
+    const take = `응답자의 <b>${pct(items[0].c, n)}%</b>가 <b>${esc(items[0].k)}</b>을(를) 골랐습니다. 여러 개를 고를 수 있어 합이 100%를 넘습니다.`;
+    if (/^Q18/.test(c.name)) insights.push(`${esc(c.name.replace(/\s*\(.*\)$/, ""))} → <b>${esc(items[0].k)}</b> ${pct(items[0].c, n)}%`);
+    qcards.push({ order: c.i, html: card(c.name, n, barsHTML(items.slice(0, 15), n), { take }) });
   }
-  // 숫자
   for (const c of cls.numerics) {
     const s = numStats(c.vals);
     if (!s.n) continue;
     let body;
     if (c.scale) { const { items } = countValues(c.vals.filter((v) => isNum(v))); body = barsHTML(sortScaleItems(items), s.n); }
     else body = `<p class="muted small">최솟값 ${s.min} · 중앙값 ${s.median} · 최댓값 ${s.max}</p>`;
-    cards.push(card(c.name, s.n, body, { take: `평균 <b>${fmt1(s.mean)}</b>${s.na ? ` · N/A ${s.na}건 제외` : ""}` }));
+    qcards.push({ order: c.i, html: card(c.name, s.n, body, { take: `평균 <b>${fmt1(s.mean)}</b>${s.na ? ` · ?·N/A ${s.na}건 제외` : ""}` }) });
   }
-  // 주관식
   for (const c of cls.texts) {
     const list = rows.map((r, i) => ({ v: (r[c.i] || "").trim(), d: cls.time ? parseDate(cls.time.vals[i]) : null })).filter((x) => x.v).reverse();
     if (!list.length) continue;
-    cards.push(card(c.name, list.length, `<ul class="texts">${list.slice(0, 60).map((x) => `<li>${x.d ? `<time>${x.d.getMonth() + 1}/${x.d.getDate()} ${String(x.d.getHours()).padStart(2, "0")}:${String(x.d.getMinutes()).padStart(2, "0")}</time>` : ""}${esc(x.v)}</li>`).join("")}</ul>`, { take: `최근 응답부터 보여 줍니다${list.length > 60 ? ` (최근 60건)` : ""}.`, noChip: true }));
+    qcards.push({ order: c.i, html: card(c.name, list.length, `<ul class="texts">${list.slice(0, 80).map((x) => `<li>${x.d ? `<time>${x.d.getMonth() + 1}/${x.d.getDate()} ${String(x.d.getHours()).padStart(2, "0")}:${String(x.d.getMinutes()).padStart(2, "0")}</time>` : ""}${esc(x.v)}</li>`).join("")}</ul>`, { take: `최근 응답부터 보여 줍니다${list.length > 80 ? " (최근 80건)" : ""}.`, noChip: true, wide: list.length > 6 }) });
   }
 
-  // 교차 분석
-  const crossable = cls.singles.filter((c) => countValues(c.vals).items.length <= 15);
-  let cross = "";
+  // ---- 교차 분석
+  const crossable = cls.singles.filter((c) => { const k = countValues(c.vals).items.length; return k >= 2 && k <= 15; });
   if (crossable.length >= 2) {
-    if (!state.crossA || !crossable.find((c) => c.name === state.crossA)) state.crossA = crossable[0].name;
-    if (!state.crossB || !crossable.find((c) => c.name === state.crossB) || state.crossB === state.crossA) state.crossB = crossable.find((c) => c.name !== state.crossA).name;
-    const A = crossable.find((c) => c.name === state.crossA), B = crossable.find((c) => c.name === state.crossB);
-    const aK = countValues(A.vals).items.map((x) => x.k), bK = countValues(B.vals).items.map((x) => x.k);
+    const has = (nm) => crossable.find((c) => c.name === nm);
+    const [dA, dB] = hints.crossDefault || [];
+    if (!has(state.crossA)) state.crossA = has(dA) ? dA : crossable[0].name;
+    if (!has(state.crossB) || state.crossB === state.crossA) state.crossB = has(dB) && dB !== state.crossA ? dB : crossable.find((c) => c.name !== state.crossA).name;
+    const A = has(state.crossA), B = has(state.crossB);
+    const aK = orderItems(countValues(A.vals).items, ORD[A.name]).map((x) => x.k), bK = orderItems(countValues(B.vals).items, ORD[B.name]).map((x) => x.k);
     const tab = aK.map((a) => { const idx = A.vals.map((v, i) => (v === a ? i : -1)).filter((i) => i >= 0); const tot = idx.filter((i) => B.vals[i]).length; return { a, tot, cells: bK.map((b) => { const c = idx.filter((i) => B.vals[i] === b).length; return { c, p: pct(c, tot) }; }) }; });
     const body = `<div class="filters hide-present"><label for="cA" class="muted">행</label><select id="cA">${crossable.map((c) => opt(c.name, state.crossA)).join("")}</select><label for="cB" class="muted">열</label><select id="cB">${crossable.filter((c) => c.name !== state.crossA).map((c) => opt(c.name, state.crossB)).join("")}</select></div>
-      <div class="tblwrap"><table><thead><tr><th>${esc(A.name)} \\ ${esc(B.name)}</th>${bK.map((b) => `<th>${esc(b)}</th>`).join("")}<th>응답</th></tr></thead><tbody>${tab.map((r) => `<tr><td>${esc(r.a)}</td>${r.cells.map((x) => `<td class="heat" style="${heatColor(x.p / 100)}" title="${x.c}명">${r.tot ? x.p + "%" : "-"}</td>`).join("")}<td class="num">${r.tot}</td></tr>`).join("")}</tbody></table></div>
-      <p class="muted small">각 행의 합이 100%입니다. 행의 응답 수가 적으면(10명 미만) 비율을 그대로 믿지 마세요.</p>`;
-    cards.splice(canvas ? 2 : 1, 0, card("교차 분석", N, body, { wide: true, noChip: true, take: `<b>${esc(A.name)}</b>에 따라 <b>${esc(B.name)}</b> 응답이 어떻게 달라지는지 봅니다.` }));
+      <div class="tblwrap"><table><thead><tr><th>${esc(A.name)}</th>${bK.map((b) => `<th>${esc(b)}</th>`).join("")}<th>응답</th></tr></thead><tbody>${tab.map((r) => `<tr><td>${esc(r.a)}</td>${r.cells.map((x) => `<td class="heat" style="${heatColor(x.p / 100)}" title="${x.c}명">${r.tot ? x.p + "%" : "-"}</td>`).join("")}<td class="num">${r.tot}</td></tr>`).join("")}</tbody></table></div>
+      <p class="muted small">각 행의 합이 100%입니다. 행의 응답 수가 10명 미만이면 비율을 그대로 믿지 마세요.</p>`;
+    top.push(card("교차 분석", N, body, { wide: true, noChip: true, take: `<b>${esc(A.name)}</b>에 따라 <b>${esc(B.name)}</b> 응답이 어떻게 달라지는지 봅니다.` }));
   }
 
-  const insightCard = card("자동 분석 요약", N, `<ul class="insights">${insights.slice(0, 9).map((s) => `<li>${s}</li>`).join("")}</ul><p class="muted small">새 응답이 들어올 때마다 다시 계산됩니다. 평균은 N/A를 뺀 값입니다.</p>`, { wide: true, noChip: true });
-  cards.splice(1, 0, insightCard);
+  const insightCard = card("자동 분석 요약", N, `<ul class="insights">${insights.slice(0, 10).map((s) => `<li>${s}</li>`).join("")}</ul><p class="muted small">새 응답이 들어올 때마다 다시 계산됩니다. 평균은 ?(판단 어려움)를 뺀 값입니다.</p>`, { wide: true, noChip: true });
+  top.splice(1, 0, insightCard);
+  canvasCards.sort((a, b) => a.order - b.order);
+  qcards.sort((a, b) => a.order - b.order);
 
   const banner = (D.demo ? `<div class="banner">지금 보이는 것은 <b>예시 데이터</b>입니다. 실제 응답을 보려면 아래 <b>시트 연결하기</b>를 따라 하세요.</div>` : "") +
     (D.error ? `<div class="banner err">${esc(D.error)} 마지막으로 받은 데이터를 보여 주고 있습니다.</div>` : "");
   $("#banner").innerHTML = banner;
-  app.innerHTML = `<div style="display:flex;flex-direction:column;gap:16px">${kpis}${filters}<div class="grid">${cards.join("")}</div>${D.demo ? setupHTML() : ""}</div>`;
+  app.innerHTML = `<div style="display:flex;flex-direction:column;gap:16px">${kpis}${filters}<div class="grid">${top.join("")}${canvasCards.map((x) => x.html).join("")}${qcards.map((x) => x.html).join("")}</div>${D.demo ? setupHTML() : ""}</div>`;
   bindApp();
   if (D.demo) bindSetup();
   if (document.body.classList.contains("present")) showSlide();
@@ -625,7 +662,7 @@ function bindApp() {
   on("#cA", "change", (e) => { state.crossA = e.target.value; render(); });
   on("#cB", "change", (e) => { state.crossB = e.target.value; render(); });
   document.querySelectorAll("[data-series]").forEach((b) => b.addEventListener("click", () => {
-    const i = +b.dataset.series; if (state.canvasOn.has(i)) state.canvasOn.delete(i); else state.canvasOn.add(i); render();
+    const set = state.canvasOn[+b.dataset.canvas], i = +b.dataset.series; if (set.has(i)) set.delete(i); else set.add(i); render();
   }));
 }
 
@@ -636,7 +673,7 @@ async function load(i, force) {
   const raw = savedLinks()[i] || CFG.sheets[i]?.csv || "";
   const url = toCsvUrl(raw);
   const live = $("#live"), liveText = $("#liveText");
-  if (!url) { state.data[i] = Object.assign(demoData(i), { demo: true }); if (i === state.sheet) { render(); liveText.textContent = "예시 데이터"; } return; }
+  if (!url) { state.data[i] = Object.assign(prepare(SCHEMA ? SCHEMA.demo() : { headers: ["예시"], rows: [] }), { demo: true }); if (i === state.sheet) { render(); liveText.textContent = "예시 데이터"; } return; }
   try {
     const res = await fetch(url + (url.includes("?") ? "&" : "?") + "_=" + Date.now(), { cache: "no-store" });
     if (!res.ok) throw new Error(`시트를 불러오지 못했습니다 (오류 ${res.status}). 링크가 '웹에 게시'의 CSV 링크인지 확인하세요.`);
@@ -644,10 +681,10 @@ async function load(i, force) {
     if (/^\s*<!doctype html|<html/i.test(text)) throw new Error("CSV가 아니라 웹페이지가 돌아왔습니다. '웹에 게시'에서 형식을 CSV로 골랐는지 확인하세요.");
     const all = parseCSV(text);
     if (!all.length) throw new Error("시트가 비어 있습니다.");
-    const headers = dedupe(all[0]);
-    const rows = all.slice(1);
+    const prepared = prepare({ headers: all[0].map((h) => h.trim()), rows: all.slice(1) });
+    const rows = prepared.rows;
     const prev = state.lastCount[i];
-    state.data[i] = { headers, rows };
+    state.data[i] = prepared;
     state.lastCount[i] = rows.length;
     if (i === state.sheet) {
       live.classList.remove("err");
@@ -661,6 +698,11 @@ async function load(i, force) {
     state.data[i] = old && old.headers && !old.demo ? Object.assign({}, old, { error: msg }) : { error: msg };
     if (i === state.sheet) { live.classList.add("err"); liveText.textContent = "연결 오류"; render(); }
   }
+}
+// 설문 코드표(schema.js)가 맞으면 열 이름·값을 실제 문항으로 바꿉니다.
+function prepare(d) {
+  if (SCHEMA && SCHEMA.detect(d.headers)) { const t = SCHEMA.transform(d.headers, d.rows, { excludeTest: CFG.excludeTest ? TEST_RE : null }); t.headers = dedupe(t.headers); return t; }
+  return { headers: dedupe(d.headers), rows: d.rows, hints: {} };
 }
 function dedupe(h) { const seen = {}; return h.map((x) => { x = x.trim(); if (seen[x]) { seen[x]++; return `${x} (${seen[x]})`; } seen[x] = 1; return x; }); }
 let toastT; function toast(m) { const t = $("#toast"); t.textContent = m; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), 3500); }
@@ -703,45 +745,6 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") setPresent(false);
 });
 document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement && document.body.classList.contains("present")) setPresent(false); });
-
-/* ------------------------------------------------------------------
-   예시 데이터 (시트를 연결하기 전에만 보임)
------------------------------------------------------------------- */
-function demoData(i) {
-  let seed = 7 + i; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-  const pick = (arr, w) => { const tot = (w || arr.map(() => 1)).reduce((a, b) => a + b, 0); let r = rnd() * tot; for (let k = 0; k < arr.length; k++) { r -= (w ? w[k] : 1); if (r <= 0) return arr[k]; } return arr[arr.length - 1]; };
-  const brandMode = i === 0;
-  const targets = brandMode ? ["현대자동차", "토요타", "폭스바겐", "마루티 스즈키", "포드", "테슬라", "메르세데스 벤츠", "BYD"] : ["자동차 구매·소유", "대중교통", "택시", "카셰어링·단기렌트", "장기렌트"];
-  const factors = brandMode ? ["구매가격의 경제성", "보유비용의 경제성", "안전성", "품질·내구 신뢰성", "승차감·정숙성", "디자인 매력", "공간 활용성", "운전보조·디지털 편의", "정비·사후지원 편의"]
-    : ["경제성", "이용 접근성", "안전성", "이동 중 편안함", "일정과 경로의 자유도", "이동 시간의 효율성", "운전 부담", "유지 및 관리 부담", "이용 중단의 용이성"];
-  const bias = targets.map(() => factors.map(() => 2.4 + rnd() * 2));
-  const H = ["타임스탬프", "연령대", brandMode ? "자동차 보유" : "운전면허", "주로 이용하는 국가",
-    ...["1순위", "2순위", "3순위"].map((r) => `가장 중요한 기준 [${r}]`),
-    ...factors.flatMap((f, fi) => targets.map((t) => `II-${fi + 1} ${f} [${t}]`)),
-    ...targets.map((t) => `전반적 평가 [${t}]`),
-    brandMode ? "현대자동차 구매 후보 포함 의향" : "자동차 소유 상태",
-    brandMode ? "판단에 영향을 준 것" : "소유하지 않거나 줄이는 이유",
-    "바뀌면 좋겠는 점"];
-  const comments = ["보험료가 너무 비싸요", "충전소가 더 많아졌으면", "중고차 처분 절차가 번거롭습니다", "구독형으로 필요할 때만 쓰고 싶어요", "정비소 예약이 어려워요", "가격 비교가 쉬웠으면 좋겠습니다", "주차 공간이 늘 부족합니다"];
-  const rows = []; const start = new Date(); start.setDate(start.getDate() - 6); start.setHours(9, 0, 0, 0);
-  const n = 84;
-  for (let k = 0; k < n; k++) {
-    const d = new Date(start.getTime() + (k / n) * (Date.now() - start.getTime()) * (0.9 + rnd() * 0.1));
-    const ap = d.getHours() < 12 ? "오전" : "오후"; const h12 = d.getHours() % 12 || 12;
-    const ts = `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()} ${ap} ${h12}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`;
-    const ranks = []; while (ranks.length < 3) { const f = pick(factors, factors.map((_, q) => (q < 3 ? 3 : 1))); if (!ranks.includes(f)) ranks.push(f); }
-    const r = [ts, pick(["20대", "30대", "40대", "50대", "60대 이상"], [5, 4, 3, 2, 1]), brandMode ? pick(["본인·가구 보유", "보유하지 않음"], [3, 2]) : pick(["있음", "없음"], [4, 1]),
-      pick(["한국", "미국", "인도", "독일", "브라질"], [6, 2, 2, 1, 1]), ...ranks];
-    factors.forEach((f, fi) => targets.forEach((t, ti) => { r.push(rnd() < 0.08 ? "N/A" : String(Math.max(1, Math.min(5, Math.round(bias[ti][fi] + (rnd() - 0.5) * 2))))); }));
-    targets.forEach((t, ti) => r.push(String(Math.max(0, Math.min(5, Math.round(bias[ti].reduce((a, b) => a + b, 0) / factors.length + (rnd() - 0.5) * 2))))));
-    r.push(brandMode ? pick(["전혀 없음", "낮음", "보통", "높음", "매우 높음"], [1, 2, 4, 3, 1]) : pick(["소유차를 주로 이용함", "소유차가 있지만 다른 방식을 더 자주 이용함", "과거 소유했지만 지금은 아님", "고려했지만 구입하지 않음", "고려한 적이 없음"], [5, 2, 1, 2, 2]));
-    const multiOpts = brandMode ? ["구매가격의 경제성", "안전성", "디자인 매력", "브랜드 이미지·신뢰", "원하는 모델이 없음"] : ["구매비용", "유지비용", "주차 공간", "운전 부담", "이용 빈도가 낮음", "다른 방식으로 충분함"];
-    r.push([...new Set([pick(multiOpts), pick(multiOpts)])].join(", "));
-    r.push(rnd() < 0.35 ? pick(comments) : "");
-    rows.push(r);
-  }
-  return { headers: H, rows };
-}
 
 /* ------------------------------------------------------------------ */
 try { const t = +localStorage.getItem("survey-dash-tab"); if (t >= 0 && t < CFG.sheets.length) state.sheet = t; } catch (e) {}
