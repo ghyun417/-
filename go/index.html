@@ -61,6 +61,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--mauve-deep); ou
   <div class="langs" role="group" aria-label="Language">
     <button type="button" data-l="en">English</button>
     <button type="button" data-l="es">Español</button>
+    <button type="button" data-l="de">Deutsch</button>
     <button type="button" data-l="pt">Português</button>
     <button type="button" data-l="fr">Français</button>
     <button type="button" data-l="it">Italiano</button>
@@ -80,12 +81,12 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--mauve-deep); ou
     <ul><li data-t="w1"></li><li data-t="w2"></li><li data-t="w3"></li></ul>
     <p class="note" data-t="langNote"></p>
   </section>
-  <a class="cta" id="start" href="https://jiyoonhaan-collab.github.io/reframe-survey/" data-t="cta"></a>
+  <a class="cta" id="start" href="https://reframe-surveyteam.github.io/" data-t="cta"></a>
   <p class="small" data-t="foot"></p>
 </main>
 <script>
 "use strict";
-const SURVEY = "https://jiyoonhaan-collab.github.io/reframe-survey/";
+const SURVEY = "https://reframe-surveyteam.github.io/";
 const T = {
   en: {
     kicker: "Student research · Korea", title: "How does the world get around?",
@@ -93,7 +94,7 @@ const T = {
     f1b: "10 min", f1: "to finish", f2b: "Anonymous", f2: "nickname only", f3b: "No ads", f3: "academic use only",
     whatH: "What you'll be asked", w1: "How you usually get around and what bothers you most along the way",
     w2: "How you rate cars, public transport, taxis and car sharing", w3: "Your impression of a few car brands",
-    langNote: "On the first screen, pick your language at the top. The survey is available in English, Español and Français.",
+    langNote: "The survey opens in your browser's language when available (English, Español, Deutsch, Français, 한국어). You can change it at the top right.",
     cta: "Start the survey →", foot: "No name, phone number or address is collected. Thank you for helping!",
   },
   es: {
@@ -102,8 +103,17 @@ const T = {
     f1b: "10 min", f1: "para terminar", f2b: "Anónima", f2: "solo un apodo", f3b: "Sin anuncios", f3: "solo uso académico",
     whatH: "Qué te preguntaremos", w1: "Cómo te mueves normalmente y qué te molesta más en el camino",
     w2: "Cómo valoras el coche, el transporte público, el taxi y el carsharing", w3: "Tu impresión de algunas marcas de coches",
-    langNote: "En la primera pantalla, elige «Español» arriba.",
+    langNote: "La encuesta se abre en el idioma de tu navegador. Si no aparece en español, elige «Español» arriba a la derecha.",
     cta: "Empezar la encuesta →", foot: "No pedimos nombre, teléfono ni dirección. ¡Gracias por ayudar!",
+  },
+  de: {
+    kicker: "Studentische Forschung · Korea", title: "Wie bewegt sich die Welt?",
+    lead: "Wir sind Studierende in Korea und vergleichen Auto, öffentliche Verkehrsmittel, Taxi und Carsharing in verschiedenen Ländern. Deine Sicht aus deinem Land hilft uns sehr.",
+    f1b: "10 Min.", f1: "Dauer", f2b: "Anonym", f2: "nur ein Spitzname", f3b: "Keine Werbung", f3: "nur für die Forschung",
+    whatH: "Was wir dich fragen", w1: "Wie du im Alltag unterwegs bist und was dich dabei am meisten stört",
+    w2: "Wie du Auto, ÖPNV, Taxi und Carsharing bewertest", w3: "Dein Eindruck von einigen Automarken",
+    langNote: "Die Umfrage öffnet sich in der Sprache deines Browsers. Falls nicht, oben rechts „Deutsch“ wählen.",
+    cta: "Umfrage starten →", foot: "Name, Telefonnummer oder Adresse werden nicht abgefragt. Danke für deine Hilfe!",
   },
   pt: {
     kicker: "Pesquisa estudantil · Coreia", title: "Como o mundo se locomove?",
@@ -111,7 +121,7 @@ const T = {
     f1b: "10 min", f1: "para responder", f2b: "Anônima", f2: "só um apelido", f3b: "Sem anúncios", f3: "uso acadêmico",
     whatH: "O que vamos perguntar", w1: "Como você costuma se locomover e o que mais incomoda no caminho",
     w2: "Como você avalia carro, transporte público, táxi e carro compartilhado", w3: "Sua impressão sobre algumas marcas de carro",
-    langNote: "A pesquisa ainda não tem versão em português. Na primeira tela, escolha «Español» ou «English» no topo — as perguntas são curtas e de múltipla escolha.",
+    langNote: "A pesquisa ainda não tem versão em português. No topo, à direita, escolha «Español» ou «English» — as perguntas são curtas e de múltipla escolha.",
     cta: "Começar a pesquisa →", foot: "Não pedimos nome, telefone nem endereço. Obrigado pela ajuda!",
   },
   fr: {
@@ -120,7 +130,7 @@ const T = {
     f1b: "10 min", f1: "pour répondre", f2b: "Anonyme", f2: "un pseudo suffit", f3b: "Sans pub", f3: "usage académique",
     whatH: "Ce que nous vous demanderons", w1: "Comment vous vous déplacez et ce qui vous gêne le plus",
     w2: "Votre avis sur la voiture, les transports en commun, le taxi et l’autopartage", w3: "Votre impression de quelques marques automobiles",
-    langNote: "Sur le premier écran, choisissez « Français » en haut.",
+    langNote: "L’enquête s’ouvre dans la langue de votre navigateur. Sinon, choisissez « Français » en haut à droite.",
     cta: "Commencer le questionnaire →", foot: "Aucun nom, téléphone ni adresse n’est demandé. Merci de votre aide !",
   },
   it: {
@@ -129,7 +139,7 @@ const T = {
     f1b: "10 min", f1: "per rispondere", f2b: "Anonimo", f2: "basta un nickname", f3b: "Niente pubblicità", f3: "solo uso accademico",
     whatH: "Cosa ti chiederemo", w1: "Come ti sposti di solito e cosa ti dà più fastidio",
     w2: "Come valuti auto, trasporto pubblico, taxi e car sharing", w3: "La tua impressione su alcune marche di auto",
-    langNote: "Il questionario non è ancora in italiano. Nella prima schermata scegli «English», «Español» o «Français» in alto: le domande sono brevi e a scelta multipla.",
+    langNote: "Il questionario non è ancora in italiano. In alto a destra scegli «English», «Español», «Deutsch» o «Français»: le domande sono brevi e a scelta multipla.",
     cta: "Inizia il questionario →", foot: "Non chiediamo nome, telefono o indirizzo. Grazie per l’aiuto!",
   },
 };

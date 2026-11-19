@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>해외 응답 홍보 키트</title>
+<title>설문 홍보 키트</title>
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -68,61 +68,83 @@ td code { font-size: 12.5px; word-break: break-all; }
   <nav class="toc" id="toc" aria-label="목차"></nav>
   <main id="main">
     <section class="intro">
-      <h1>해외 응답 홍보 키트</h1>
+      <h1>설문 홍보 키트</h1>
       <p>필요한 문구를 <b>언어 탭</b>에서 고르고 <b>복사</b>를 눌러 그대로 붙여 넣으세요. 링크는 <b>설문 주소로 바로</b> 연결됩니다.</p>
-      <p>번역은 Claude가 썼습니다. 가능하면 원어민 친구에게 한 번 봐 달라고 하세요. 모든 글에서 <b>‘학술 연구, 익명, 10분’</b>을 분명히 밝히고, 커뮤니티 규칙과 관리자 허락을 먼저 확인하세요.</p>
+      <p>번역은 Claude가 썼습니다. 가능하면 원어민 친구에게 한 번 봐 달라고 하세요. 모든 글에서 <b>‘학술 연구, 익명, 10분, 만 19세 이상’</b>을 분명히 밝히고, 커뮤니티 규칙과 관리자 허락을 먼저 확인하세요.</p>
+      <p>Reddit 규칙은 각 게시판 사이드바 기준으로 정리했지만 바뀔 수 있으니, 올리기 전에 사이드바의 Rules를 한 번 더 확인하세요.</p>
     </section>
   </main>
 </div>
 <script>
 "use strict";
-const SURVEY = "https://jiyoonhaan-collab.github.io/reframe-survey/";
+const SURVEY = "https://reframe-surveyteam.github.io/";
 const GO = "https://ghyun417.github.io/-/go/";
-// 설문 주소 + 언어 표시. 설문이 ?lang= 자동 전환을 지원하면 그 언어로 바로 열립니다.
-const S = (lang) => (lang ? `${SURVEY}?lang=${lang}` : SURVEY);
-// 메시지용: 지금은 설문이 언어를 자동으로 바꾸지 않아서, 첫 화면에서 언어를 고르라는 한 줄을 붙입니다.
+// 설문은 응답자의 브라우저 언어(한국어·English·Español·Deutsch·Français)로 자동으로 열립니다.
+// 다른 언어로 열릴 때를 대비해, 메시지 끝에 오른쪽 위 언어 메뉴를 고르라는 한 줄을 붙입니다.
 const HINT = {
-  es: "(Arriba, elige «Español».)",
-  fr: "(En haut de la page, choisissez « Français ».)",
-  pt: "(No topo da página, escolha «Español» ou «English».)",
-  it: "(In alto, scegli «English» o «Español».)",
+  es: "(Si no aparece en español, elige «Español» arriba a la derecha.)",
+  fr: "(Si l’enquête ne s’affiche pas en français, choisissez « Français » en haut à droite.)",
+  de: "(Falls die Umfrage nicht auf Deutsch erscheint, oben rechts „Deutsch“ wählen.)",
+  pt: "(A pesquisa não tem versão em português: no topo, escolha «Español» ou «English».)",
+  it: "(Il questionario non è in italiano: in alto a destra scegli «English», «Español», «Deutsch» o «Français».)",
 };
-const M = (lang) => S(lang) + (HINT[lang] ? `\n${HINT[lang]}` : "");
-const LANG_NAMES = { ko: "한국어", en: "English", es: "Español", pt: "Português", fr: "Français", it: "Italiano" };
+const M = (lang) => SURVEY + (HINT[lang] ? `\n${HINT[lang]}` : "");
+const LANG_NAMES = { ko: "한국어", en: "English", es: "Español", de: "Deutsch", pt: "Português", fr: "Français", it: "Italiano" };
+
+const REDDIT_BODY = `Hi everyone! We're a student research team from the School of Business Administration at Chungnam National University (South Korea), running this survey for our Global Field Study course.
+
+We want to understand how people get around day to day, what frustrates them along the way, and what matters to them when choosing a car brand or a way of getting around. Using Hyundai as a case study, we'll use the results to explore ideas for new mobility services.
+
+- Who: anyone 19 or older. Drivers and non-drivers are equally welcome (public transport, taxis, car sharing)
+- Time: about 10 minutes
+- Anonymous: nickname only, no name, email or address
+- Languages: English, Spanish, German, French and Korean (opens in your browser's language; menu at the top right)
+- Academic use only. No ads, no sales
+
+Survey: ${SURVEY}
+
+There are no right or wrong answers. Your everyday experience is exactly what we need.`;
 
 const BLOCKS = [
   { group: "시작 전에" },
-  { id: "links", title: "설문 링크", who: "모든 팀원", how: "모든 메시지가 <b>설문 주소로 바로</b> 연결됩니다. 끝의 <code>?lang=</code>는 설문 언어 표시예요. 설문이 자동 전환을 지원하게 되면 그 언어로 바로 열리고, 그 전에는 첫 화면에서 언어를 고르면 됩니다.", table: [
-    ["영어", S("en")], ["스페인어", S("es")], ["프랑스어", S("fr")], ["포르투갈어 (번역 추가 전에는 스페인어·영어로 응답)", S("pt")],
-    ["이탈리아어 (번역 추가 전에는 영어·스페인어로 응답)", S("it")], ["언어 표시 없음", S("")],
+  { id: "links", title: "설문 링크", who: "모든 팀원", how: "모든 메시지가 <b>설문 주소로 바로</b> 연결됩니다. 설문은 응답자의 <b>브라우저 언어</b>(한국어·영어·스페인어·독일어·프랑스어)로 자동으로 열리고, 오른쪽 위 메뉴에서 바꿀 수 있어요. 포르투갈어·이탈리아어는 번역이 없어서 메시지에 영어·스페인어를 고르라는 안내를 붙였어요.", table: [
+    ["설문 링크 (모든 언어 공통)", SURVEY],
     ["(선택) 프로필 소개란용 다국어 안내 페이지", GO],
   ] },
-  { id: "teammate", title: "팀원에게: 설문 수정 요청", who: "설문 페이지 담당 팀원", how: "해외 응답을 나라별로 보려면 꼭 필요합니다. 오늘 보내 주세요.", msgs: { ko:
-`해외 응답 모으기 전에 설문 페이지에 몇 가지만 부탁할게!
+  { id: "kakao", title: "카카오톡·국내 커뮤니티 홍보 글", who: "모든 팀원", how: "국내 지인, 단톡방, 학교 커뮤니티에 그대로 붙여 넣으세요.", msgs: { ko:
+`🚗 이동수단 관련 설문조사 참여 부탁드립니다! 🙏
 
-[꼭 필요]
-1. 국가 문항 추가: "주로 생활하는 국가" (미국, 캐나다, 멕시코, 브라질, 아르헨티나, 스페인, 프랑스, 이탈리아, 독일, 영국, 한국, 기타)
-   → 이게 없으면 해외 응답이 와도 어느 나라 응답인지 알 수 없어.
-2. 응답 언어 저장: 응답자가 고른 언어(ko/en/es/de/fr)를 같이 저장
-3. 링크 주소의 ?lang= 값으로 첫 화면 언어 자동 선택, ?src= 값(유입 채널)도 같이 저장
-   (Apps Script가 새 항목을 시트 열로 저장하는지도 확인 부탁해)
+안녕하세요! 충남대학교 경영학부 학생 연구팀입니다.
 
-[있으면 큰 도움]
-4. 포르투갈어·이탈리아어 번역 추가 (브라질·이탈리아 응답자용)
-5. 마지막 화면에 "친구에게 공유" 버튼 (공유 링크: https://jiyoonhaan-collab.github.io/reframe-survey/)
+본 설문은 사람들이 일상에서 어떤 방법으로 이동하고 그 과정에서 어떤 불편을 겪는지, 자동차 브랜드와 이동수단을 고를 때 무엇을 중요하게 생각하는지 알아보기 위한 조사입니다. 조사 결과는 현대자동차를 사례로 새로운 이동 서비스의 가능성을 검토하는 데 활용됩니다.
 
-혹시 저장소에 나(ghyun417)를 협업자로 초대해 주면 Claude랑 같이 직접 고쳐서 확인 후 반영할게.
-기존 응답 열 순서는 그대로 두고, 새 열은 맨 뒤에 붙이면 대시보드가 안 깨져!` } },
+여러분께서 일상에서 겪으신 경험과 불편은 이용자의 관점에서 서비스를 설계하는 데 소중한 기초 자료가 됩니다. 각 문항에는 정답이 없으니, 평소 생각하시는 대로 솔직하게 답해 주세요.
+
+자가용을 이용하시는 분은 물론, 대중교통·택시·카셰어링을 이용하시는 분도 참여하실 수 있습니다.
+
+
+📌 설문 주제: 이동수단별 소비자 인식 및 선호도 조사
+
+⏰ 소요 시간: 약 10분
+
+👥 참여 대상: 자동차에 관심이 있는 누구나(자동차에 관심 없어도 참여 가능)
+
+🔗 설문 링크: ${SURVEY}
+
+여러분의 응답은 현대자동차의 새로운 시장 기회를 발굴하기 위한 프로젝트의 소중한 자료로 활용됩니다.
+
+바쁘시겠지만 잠시만 시간 내어 참여해 주시면 정말 감사하겠습니다! 😊` } },
   { id: "office", title: "학교 국제처에 보내는 메일", who: "팀 대표", how: "협정 대학이나 외국인 유학생회에 공유를 부탁하는 메일입니다. [ ] 안을 채우세요.", msgs: { ko:
-`제목: [학과/수업명] 학술 설문 해외 협정교 공유 협조 요청
+`제목: [경영학부 글로벌 현장학습] 학술 설문 해외 협정교 공유 협조 요청
 
-안녕하세요, [학과] [이름]입니다.
-[수업명] 과제로 "자동차 소유와 이동 방법에 대한 국가별 인식" 설문을 진행하고 있습니다.
+안녕하세요, 충남대학교 경영학부 [이름]입니다.
+글로벌 현장학습 수업 과제로 "일상 이동 경험 및 이동수단 선택 요인" 설문을 진행하고 있습니다. 사람들이 일상에서 어떻게 이동하고 어떤 불편을 겪는지, 자동차 브랜드와 이동수단을 고를 때 무엇을 중요하게 생각하는지 알아보는 조사이며, 결과는 현대자동차를 사례로 새로운 이동 서비스의 가능성을 검토하는 데 활용됩니다.
 북미·유럽·중남미 응답이 필요해, 가능하시다면 해외 협정 대학 담당자나 외국인 유학생회에 아래 링크를 공유해 주실 수 있을지 여쭙습니다.
 
 - 소요 시간: 약 10분 / 익명(이름·연락처 미수집) / 학술 목적에만 사용
-- 언어: 영어, 스페인어, 프랑스어 (포르투갈어·이탈리아어 안내 포함)
-- 링크: ${S("")}
+- 참여 대상: 만 19세 이상 누구나 (자가용 이용 여부와 관계없음)
+- 언어: 한국어, 영어, 스페인어, 독일어, 프랑스어 (브라우저 언어로 자동 표시)
+- 링크: ${SURVEY}
 - 마감: 11월 30일
 
 바쁘신 중에 감사합니다.
@@ -130,51 +152,67 @@ const BLOCKS = [
 
   { group: "① 사람을 통해 (가장 확실)" },
   { id: "intl", title: "유학생에게: 부모님·지인께 전달 부탁", who: "외국인 유학생, 해외 친구", how: "<b>본인 말고 가족·지인에게</b> 보내 달라고 부탁하는 게 핵심입니다. 40~60대 현지인 응답을 얻을 수 있어요. 먼저 ‘부탁’ 메시지를 보내고, 그들이 전달할 ‘전달용’ 메시지를 함께 주세요.", msgs: {
-    ko: `안녕! 우리 수업 과제로 "나라별로 사람들이 차와 이동 방법을 어떻게 생각하는지" 설문을 하고 있어.\n혹시 너희 가족 단톡방이나 고향 친구들한테 한 번만 보내 줄 수 있을까? 특히 부모님 세대 응답이 정말 필요해 🙏\n아래 '전달용' 메시지를 그대로 복사해서 보내 주면 돼. 10분 정도 걸리고 익명이야. 고마워!`,
-    en: `Hi! My friend in Korea is doing a university research survey on how people in different countries get around (cars, public transport, taxis, car sharing).\nIt takes about 10 minutes and is anonymous. Answers from people of every age really help — could you fill it in and share it? 🙏\n${M("en")}`,
-    es: `¡Hola! Un amigo en Corea está haciendo una encuesta universitaria sobre cómo se mueve la gente en distintos países (coche, transporte público, taxi, carsharing).\nSon unos 10 minutos y es anónima. Las respuestas de personas de todas las edades ayudan muchísimo. ¿Me ayudas a responderla y compartirla? 🙏\n${M("es")}`,
-    pt: `Oi! Um amigo na Coreia está fazendo uma pesquisa universitária sobre como as pessoas se locomovem em vários países (carro, transporte público, táxi, carro compartilhado).\nLeva uns 10 minutos e é anônima. Respostas de todas as idades ajudam muito — pode responder e repassar? 🙏\n${M("pt")}`,
-    fr: `Bonjour ! Un ami en Corée mène une enquête universitaire sur la façon dont les gens se déplacent selon les pays (voiture, transports en commun, taxi, autopartage).\nCela prend environ 10 minutes et c’est anonyme. Les réponses de tous les âges sont précieuses — pourriez-vous y répondre et la partager ? 🙏\n${M("fr")}`,
-    it: `Ciao! Un amico in Corea sta facendo un questionario universitario su come si spostano le persone nei vari paesi (auto, trasporto pubblico, taxi, car sharing).\nCi vogliono circa 10 minuti ed è anonimo. Le risposte di tutte le età sono preziose: puoi rispondere e condividerlo? 🙏\n${M("it")}`,
+    ko: `안녕! 우리 수업 과제로 "사람들이 평소 어떻게 이동하고, 차나 이동수단을 고를 때 뭘 중요하게 생각하는지" 설문을 하고 있어.\n혹시 너희 가족 단톡방이나 고향 친구들한테 한 번만 보내 줄 수 있을까? 특히 부모님 세대 응답이 정말 필요해 🙏\n아래 '전달용' 메시지를 그대로 복사해서 보내 주면 돼. 10분 정도 걸리고 익명이야. 설문은 그 사람 폰 언어(영어·스페인어·독일어·프랑스어)로 자동으로 열려. 고마워!`,
+    en: `Hi! My friend in Korea is running a university research survey on how people get around day to day (car, public transport, taxi, car sharing) and what matters when choosing a car or a way to travel.\nIt takes about 10 minutes and is anonymous. Anyone 19+ can take part, with or without a car — answers from every age group really help. Could you fill it in and share it? 🙏\n${M("en")}`,
+    es: `¡Hola! Un amigo en Corea está haciendo una encuesta universitaria sobre cómo se mueve la gente en su día a día (coche, transporte público, taxi, carsharing) y qué valora al elegir un coche o un medio de transporte.\nSon unos 10 minutos y es anónima. Puede participar cualquier persona mayor de 19 años, tenga coche o no. ¿Me ayudas a responderla y compartirla? 🙏\n${M("es")}`,
+    de: `Hallo! Ein Freund in Korea macht eine Uni-Umfrage dazu, wie Menschen im Alltag unterwegs sind (Auto, ÖPNV, Taxi, Carsharing) und worauf sie bei der Wahl eines Autos oder Verkehrsmittels achten.\nSie dauert etwa 10 Minuten und ist anonym. Mitmachen kann jede Person ab 19, mit oder ohne Auto. Könntest du sie ausfüllen und weiterleiten? 🙏\n${M("de")}`,
+    pt: `Oi! Um amigo na Coreia está fazendo uma pesquisa universitária sobre como as pessoas se locomovem no dia a dia (carro, transporte público, táxi, carro compartilhado) e o que importa na hora de escolher.\nLeva uns 10 minutos e é anônima. Qualquer pessoa com 19 anos ou mais pode participar, tendo carro ou não. Pode responder e repassar? 🙏\n${M("pt")}`,
+    fr: `Bonjour ! Un ami en Corée mène une enquête universitaire sur la façon dont on se déplace au quotidien (voiture, transports en commun, taxi, autopartage) et sur ce qui compte dans le choix d’une voiture ou d’un mode de transport.\nCela prend environ 10 minutes et c’est anonyme. Toute personne de 19 ans ou plus peut participer, avec ou sans voiture. Pourriez-vous y répondre et la partager ? 🙏\n${M("fr")}`,
+    it: `Ciao! Un amico in Corea sta facendo un questionario universitario su come ci si sposta ogni giorno (auto, trasporto pubblico, taxi, car sharing) e su cosa conta nella scelta di un’auto o di un mezzo.\nCi vogliono circa 10 minuti ed è anonimo. Può partecipare chiunque abbia almeno 19 anni, con o senza auto. Puoi rispondere e condividerlo? 🙏\n${M("it")}`,
   } },
 
-  { group: "② 커뮤니티 (30~50대)" },
+  { group: "② Reddit" },
+  { id: "rsamplesize", title: "r/SampleSize 게시 글", who: "오래된 Reddit 계정", how: "<b>[Academic] 플레어 필수.</b> 제목은 주제를 설명하고, <b>맨 끝 괄호에 대상(demographic)</b>을 적어야 합니다. 대상이 길면 본문에 자세히 쓰고 제목에 그렇다고 표시해요. 게시 후 자동 필터에 걸려도 <b>지우지 말고</b> 운영자 승인을 기다리세요. 다시 올릴 때는 제목에 (Repost)를 붙이세요.", msgs: {
+    en: `[제목]\n[Academic] Car, transit, taxi or car sharing? What frustrates you about getting around, and what you look for in a car brand – 10 min, anonymous (Everyone 19+)\n\n[플레어] Academic\n\n[본문]\n${REDDIT_BODY}\n\nHappy to answer questions in the comments, and we'll post a summary of the results here after the survey closes on Nov 30. Thank you!`,
+  } },
+  { id: "rexchange", title: "r/SurveyExchange 게시 글", who: "오래된 Reddit 계정", how: "서로의 설문에 답해 주는 게시판입니다. <b>설문 하나당 글 하나</b>만 올리고, 제목 앞에 [Academic]을 붙이세요. 댓글로 링크를 남긴 사람의 설문에는 <b>꼭 답해 주세요.</b> 팀원이 나눠서 답하면 됩니다.", msgs: {
+    en: `[제목]\n[Academic] How do you get around every day? Cars vs public transport, taxis & car sharing – 10 min, anonymous (Everyone 19+) – I'll take yours in return!\n\n[본문]\n${REDDIT_BODY}\n\n🔁 Survey exchange: leave your survey link in a comment after you finish, and our team will take yours too. Thank you!`,
+  } },
+  { id: "rtakemysurvey", title: "r/takemysurvey 게시 글", who: "오래된 Reddit 계정", how: "이 게시판은 <b>다른 글에 “done”, “complete” 같은 댓글을 다는 것</b>과 <b>남의 글 댓글에 내 설문 링크를 붙이는 것</b>을 스팸으로 보고 일시 차단합니다. 링크는 내 글 본문에만 넣으세요.", msgs: {
+    en: `[제목]\n[Academic] Is owning a car still worth it? 10-min anonymous survey on how you get around and how you choose a car or ride (Everyone 19+)\n\n[본문]\n${REDDIT_BODY}\n\nIf you have any questions, feel free to ask in the comments. Thank you so much for your time!`,
+  } },
+  { id: "rmodmail", title: "다른 Reddit 게시판 운영자 문의", who: "r/cars, r/transit, 나라별 게시판 등", how: "설문 전용이 아닌 게시판은 <b>운영자에게 먼저</b> modmail로 허락을 받으세요. 허락 없이 올리면 삭제되고 차단될 수 있어요.", msgs: {
+    en: `Hi mods! We're a student research team from Chungnam National University (South Korea) running a short academic survey on how people get around day to day and what matters when they choose a car brand or a way of getting around (about 10 min, anonymous, 19+, no ads or sales).\nWould it be okay to post it once in your community? We'll follow any rules or flair you prefer, and we're happy to share the results afterwards. Thanks for considering!`,
+  } },
+
+  { group: "③ 커뮤니티 (30~50대)" },
   { id: "fbadmin", title: "Facebook 그룹 관리자에게 허락 요청", who: "팀원 본인 Facebook 계정", how: "그룹에 가입한 뒤 <b>관리자에게 먼저</b> 메시지를 보내세요. 허락 없이 올리면 삭제되고 차단됩니다.", msgs: {
-    en: `Hi! I'm a university student in Korea. Our team is running an academic survey on how people choose between owning a car, public transport, taxis and car sharing in different countries.\nWould it be okay to share the survey link once in your group? It's anonymous, takes about 10 minutes, and has no ads or sales. We'll happily share the results with the group afterwards. Thank you!`,
-    es: `¡Hola! Soy estudiante universitario en Corea. Mi equipo está haciendo una encuesta académica sobre cómo la gente elige entre tener coche, el transporte público, el taxi y el carsharing en distintos países.\n¿Te parece bien que comparta el enlace una vez en el grupo? Es anónima, dura unos 10 minutos y no tiene publicidad ni ventas. Después compartiremos los resultados con el grupo. ¡Gracias!`,
-    pt: `Olá! Sou estudante universitário na Coreia. Minha equipe está fazendo uma pesquisa acadêmica sobre como as pessoas escolhem entre ter carro, transporte público, táxi e carro compartilhado em vários países.\nPosso compartilhar o link uma vez no grupo? É anônima, leva uns 10 minutos e não tem propaganda nem venda. Depois compartilhamos os resultados com o grupo. Obrigado!`,
-    fr: `Bonjour ! Je suis étudiant en Corée. Notre équipe mène une enquête universitaire sur la façon dont les gens choisissent entre posséder une voiture, les transports en commun, le taxi et l’autopartage selon les pays.\nPuis-je partager le lien une fois dans le groupe ? C’est anonyme, cela prend environ 10 minutes, sans publicité ni vente. Nous partagerons volontiers les résultats ensuite. Merci !`,
-    it: `Ciao! Sono uno studente universitario in Corea. Il mio gruppo sta svolgendo un questionario accademico su come le persone scelgono tra auto di proprietà, trasporto pubblico, taxi e car sharing nei vari paesi.\nPosso condividere il link una volta nel gruppo? È anonimo, dura circa 10 minuti e non contiene pubblicità né vendite. Poi condivideremo volentieri i risultati. Grazie!`,
+    en: `Hi! I'm a university student in Korea. Our team is running an academic survey on how people get around day to day and how they choose between owning a car, public transport, taxis and car sharing.\nWould it be okay to share the survey link once in your group? It's anonymous, takes about 10 minutes, and has no ads or sales. We'll happily share the results with the group afterwards. Thank you!`,
+    es: `¡Hola! Soy estudiante universitario en Corea. Mi equipo está haciendo una encuesta académica sobre cómo se mueve la gente en su día a día y cómo elige entre tener coche, el transporte público, el taxi y el carsharing.\n¿Te parece bien que comparta el enlace una vez en el grupo? Es anónima, dura unos 10 minutos y no tiene publicidad ni ventas. Después compartiremos los resultados con el grupo. ¡Gracias!`,
+    de: `Hallo! Ich studiere in Korea. Unser Team führt eine wissenschaftliche Umfrage dazu durch, wie Menschen im Alltag unterwegs sind und wie sie zwischen eigenem Auto, öffentlichen Verkehrsmitteln, Taxi und Carsharing wählen.\nDürfte ich den Link einmal in der Gruppe teilen? Die Umfrage ist anonym, dauert etwa 10 Minuten und enthält keine Werbung oder Verkäufe. Die Ergebnisse teilen wir danach gern mit der Gruppe. Vielen Dank!`,
+    pt: `Olá! Sou estudante universitário na Coreia. Minha equipe está fazendo uma pesquisa acadêmica sobre como as pessoas se locomovem no dia a dia e como escolhem entre ter carro, transporte público, táxi e carro compartilhado.\nPosso compartilhar o link uma vez no grupo? É anônima, leva uns 10 minutos e não tem propaganda nem venda. Depois compartilhamos os resultados com o grupo. Obrigado!`,
+    fr: `Bonjour ! Je suis étudiant en Corée. Notre équipe mène une enquête universitaire sur la façon dont on se déplace au quotidien et dont on choisit entre posséder une voiture, les transports en commun, le taxi et l’autopartage.\nPuis-je partager le lien une fois dans le groupe ? C’est anonyme, cela prend environ 10 minutes, sans publicité ni vente. Nous partagerons volontiers les résultats ensuite. Merci !`,
+    it: `Ciao! Sono uno studente universitario in Corea. Il mio gruppo sta svolgendo un questionario accademico su come ci si sposta ogni giorno e su come si sceglie tra auto di proprietà, trasporto pubblico, taxi e car sharing.\nPosso condividere il link una volta nel gruppo? È anonimo, dura circa 10 minuti e non contiene pubblicità né vendite. Poi condivideremo volentieri i risultati. Grazie!`,
   } },
   { id: "fbpost", title: "Facebook 그룹·커뮤니티 게시 글", who: "허락받은 뒤", how: "질문으로 시작하면 댓글이 달리고, 댓글이 달리면 더 많이 노출됩니다. 댓글에는 꼭 답하세요.", msgs: {
-    en: `Is owning a car still worth it in 2026? 🚗🚇🚕\n\nWe're university students in Korea comparing how people in different countries get around — car ownership vs public transport, taxis and car sharing. We'd love the view from people who actually live here.\n\n⏱ ~10 minutes · 🔒 anonymous (nickname only) · 🎓 academic use only\n👉 ${M("en")}\n\nCurious what you think: if you could drop one cost of owning a car, which would it be? Tell us in the comments 👇`,
-    es: `¿Todavía vale la pena tener coche en 2026? 🚗🚇🚕\n\nSomos estudiantes universitarios en Corea y comparamos cómo se mueve la gente en distintos países: tener coche frente a transporte público, taxi y carsharing. Nos encantaría saber la opinión de quienes viven aquí.\n\n⏱ ~10 minutos · 🔒 anónima (solo un apodo) · 🎓 solo uso académico\n👉 ${M("es")}\n\nY tú, si pudieras eliminar un gasto del coche, ¿cuál sería? Cuéntanos en los comentarios 👇`,
-    pt: `Ainda vale a pena ter carro em 2026? 🚗🚇🚕\n\nSomos estudantes universitários na Coreia comparando como as pessoas se locomovem em vários países: carro próprio x transporte público, táxi/app e carro compartilhado. Queremos muito a opinião de quem mora aqui.\n\n⏱ ~10 minutos · 🔒 anônima (só um apelido) · 🎓 uso acadêmico\n👉 ${M("pt")}\n\nE você: se pudesse cortar um custo do carro, qual seria? Conta aqui nos comentários 👇`,
-    fr: `Avoir une voiture, est-ce encore rentable en 2026 ? 🚗🚇🚕\n\nNous sommes des étudiants en Corée et comparons la façon dont on se déplace selon les pays : voiture personnelle ou transports en commun, taxi et autopartage. Votre avis compte !\n\n⏱ ~10 minutes · 🔒 anonyme (un pseudo suffit) · 🎓 usage académique\n👉 ${M("fr")}\n\nEt vous, si vous pouviez supprimer un coût lié à la voiture, lequel ? Dites-le en commentaire 👇`,
-    it: `Nel 2026 conviene ancora avere un’auto? 🚗🚇🚕\n\nSiamo studenti universitari in Corea e confrontiamo come ci si sposta nei vari paesi: auto di proprietà o trasporto pubblico, taxi e car sharing. Ci piacerebbe avere il parere di chi vive qui.\n\n⏱ ~10 minuti · 🔒 anonimo (basta un nickname) · 🎓 solo uso accademico\n👉 ${M("it")}\n\nE tu, se potessi eliminare un costo dell’auto, quale sceglieresti? Scrivilo nei commenti 👇`,
-  } },
-  { id: "reddit", title: "Reddit: r/SampleSize 게시 + 운영자 문의", who: "오래된 Reddit 계정", how: "r/SampleSize는 <b>[Academic] 태그(flair)가 필수</b>이고, 제목에 주제와 대상을 적어야 합니다. 다른 게시판(r/cars, r/transit, 나라별 게시판)은 <b>운영자에게 먼저</b> 물어보세요.", msgs: {
-    en: `[제목]\n[Academic] How do you get around? Car ownership vs public transport, taxis & car sharing (Everyone 18+, especially North America, Europe & Latin America)\n\n[본문]\nHi r/SampleSize! We're university students in Korea studying why people own (or don't own) a car, and how they compare it with public transport, taxis and car sharing across countries.\n\n- About 10 minutes\n- Anonymous: nickname only, no name/email/address\n- Available in English, Spanish and French\n- Purely academic; we'll post results here after it closes (Nov 30)\n\nSurvey: ${M("en")}\n\nHappy to answer questions in the comments, and we'll gladly take your surveys in return!\n\n----- [다른 게시판 운영자에게 보낼 modmail] -----\nHi mods! We're university students in Korea running a short academic survey (≈10 min, anonymous, no ads) on car ownership vs other ways of getting around. Would it be okay to post it once in your community? We'll follow any rules or flair you prefer. Thanks for considering!`,
+    en: `Is owning a car still worth it in 2026? 🚗🚇🚕\n\nWe're university students in Korea studying how people get around day to day, what frustrates them along the way, and what matters when they choose a car brand or a way to travel. Your everyday experience is exactly what we need — with or without a car.\n\n⏱ ~10 minutes · 🔒 anonymous (nickname only) · 🎓 academic use only · 19+\n👉 ${M("en")}\n\nCurious what you think: if you could drop one cost of owning a car, which would it be? Tell us in the comments 👇`,
+    es: `¿Todavía vale la pena tener coche en 2026? 🚗🚇🚕\n\nSomos estudiantes universitarios en Corea y estudiamos cómo se mueve la gente en su día a día, qué le molesta en el camino y qué valora al elegir una marca de coche o un medio de transporte. Tu experiencia es justo lo que necesitamos, tengas coche o no.\n\n⏱ ~10 minutos · 🔒 anónima (solo un apodo) · 🎓 solo uso académico · +19\n👉 ${M("es")}\n\nY tú, si pudieras eliminar un gasto del coche, ¿cuál sería? Cuéntanos en los comentarios 👇`,
+    de: `Lohnt sich ein eigenes Auto 2026 noch? 🚗🚇🚕\n\nWir sind Studierende in Korea und untersuchen, wie Menschen im Alltag unterwegs sind, was sie dabei nervt und worauf sie bei der Wahl einer Automarke oder eines Verkehrsmittels achten. Eure Erfahrungen sind genau das, was wir brauchen – mit oder ohne Auto.\n\n⏱ ca. 10 Minuten · 🔒 anonym (nur ein Spitzname) · 🎓 nur für Forschungszwecke · ab 19\n👉 ${M("de")}\n\nUnd ihr: Welche Kosten rund ums Auto würdet ihr am liebsten streichen? Schreibt es in die Kommentare 👇`,
+    pt: `Ainda vale a pena ter carro em 2026? 🚗🚇🚕\n\nSomos estudantes universitários na Coreia estudando como as pessoas se locomovem no dia a dia, o que incomoda no caminho e o que importa na hora de escolher uma marca de carro ou um meio de transporte. Sua experiência é exatamente o que precisamos, tendo carro ou não.\n\n⏱ ~10 minutos · 🔒 anônima (só um apelido) · 🎓 uso acadêmico · 19+\n👉 ${M("pt")}\n\nE você: se pudesse cortar um custo do carro, qual seria? Conta aqui nos comentários 👇`,
+    fr: `Avoir une voiture, est-ce encore rentable en 2026 ? 🚗🚇🚕\n\nNous sommes des étudiants en Corée et nous étudions comment on se déplace au quotidien, ce qui gêne en chemin et ce qui compte dans le choix d’une marque automobile ou d’un mode de transport. Votre expérience est exactement ce qu’il nous faut, avec ou sans voiture.\n\n⏱ ~10 minutes · 🔒 anonyme (un pseudo suffit) · 🎓 usage académique · 19 ans et +\n👉 ${M("fr")}\n\nEt vous, si vous pouviez supprimer un coût lié à la voiture, lequel ? Dites-le en commentaire 👇`,
+    it: `Nel 2026 conviene ancora avere un’auto? 🚗🚇🚕\n\nSiamo studenti universitari in Corea e studiamo come ci si sposta ogni giorno, cosa dà fastidio lungo il percorso e cosa conta nella scelta di una marca d’auto o di un mezzo. La tua esperienza è proprio ciò che ci serve, con o senza auto.\n\n⏱ ~10 minuti · 🔒 anonimo (basta un nickname) · 🎓 solo uso accademico · 19+\n👉 ${M("it")}\n\nE tu, se potessi eliminare un costo dell’auto, quale sceglieresti? Scrivilo nei commenti 👇`,
   } },
   { id: "langx", title: "HelloTalk · Tandem 게시 글", who: "언어교환 앱", how: "한국어를 배우는 사람들이 많습니다. 짧은 한국어 인사로 시작하면 반응이 좋아요. 중남미 사용자에게 특히 효과적입니다.", msgs: {
-    en: `안녕하세요! 👋 Korean university students here 🇰🇷\nWe need help from people around the world for our research on how people get around (cars, public transport, taxis, car sharing).\n10 min · anonymous 🙏 감사합니다!\n${M("en")}\nIf you have a Korean question, ask me in the comments — I'll help you back 😊`,
-    es: `¡안녕하세요! 👋 Somos estudiantes universitarios en Corea 🇰🇷\nNecesitamos ayuda de gente de todo el mundo para nuestra investigación sobre cómo se mueve la gente (coche, transporte público, taxi, carsharing).\n10 min · anónima 🙏 감사합니다!\n${M("es")}\nSi tienes alguna duda de coreano, pregúntame en los comentarios y te ayudo 😊`,
-    pt: `안녕하세요! 👋 Somos estudantes universitários na Coreia 🇰🇷\nPrecisamos da ajuda de pessoas do mundo todo para nossa pesquisa sobre como as pessoas se locomovem (carro, transporte público, táxi, carro compartilhado).\n10 min · anônima 🙏 감사합니다!\n${M("pt")}\nSe tiver dúvida de coreano, pergunta nos comentários que eu ajudo 😊`,
+    en: `안녕하세요! 👋 Korean university students here 🇰🇷\nWe need help from people around the world for our research on how people get around every day (cars, public transport, taxis, car sharing).\n10 min · anonymous · 19+ 🙏 감사합니다!\n${M("en")}\nIf you have a Korean question, ask me in the comments — I'll help you back 😊`,
+    es: `¡안녕하세요! 👋 Somos estudiantes universitarios en Corea 🇰🇷\nNecesitamos ayuda de gente de todo el mundo para nuestra investigación sobre cómo se mueve la gente cada día (coche, transporte público, taxi, carsharing).\n10 min · anónima · +19 🙏 감사합니다!\n${M("es")}\nSi tienes alguna duda de coreano, pregúntame en los comentarios y te ayudo 😊`,
+    de: `안녕하세요! 👋 Wir sind Studierende aus Korea 🇰🇷\nFür unsere Forschung dazu, wie Menschen im Alltag unterwegs sind (Auto, ÖPNV, Taxi, Carsharing), brauchen wir Hilfe aus aller Welt.\n10 Min. · anonym · ab 19 🙏 감사합니다!\n${M("de")}\nWenn du eine Frage zum Koreanischen hast, frag mich in den Kommentaren – ich helfe gern 😊`,
+    pt: `안녕하세요! 👋 Somos estudantes universitários na Coreia 🇰🇷\nPrecisamos da ajuda de pessoas do mundo todo para nossa pesquisa sobre como as pessoas se locomovem no dia a dia (carro, transporte público, táxi, carro compartilhado).\n10 min · anônima · 19+ 🙏 감사합니다!\n${M("pt")}\nSe tiver dúvida de coreano, pergunta nos comentários que eu ajudo 😊`,
   } },
 
-  { group: "③ 설문 교환" },
+  { group: "④ 설문 교환 사이트" },
   { id: "swap", title: "SurveySwap · SurveyCircle 등록 문구", who: "팀원 모두 (포인트 모으기)", how: "등록 후 <b>팀원이 하루 3~5개씩</b> 다른 사람 설문에 답해 포인트를 모으세요. 포인트가 있어야 내 설문이 노출됩니다.", msgs: {
-    en: `Title: How do you get around? Cars vs public transport, taxis & car sharing\n\nDescription: Academic survey by university students in Korea comparing car ownership with other ways of getting around in different countries. Anonymous (nickname only), about 10 minutes, available in English, Spanish and French. Anyone 18+ can take part; responses from North America, Europe and Latin America are especially welcome.\n\nLink: ${M("en")}`,
+    en: `Title: How do you get around? Cars vs public transport, taxis & car sharing\n\nDescription: Academic survey by a student research team at Chungnam National University (South Korea). We study how people get around day to day, what frustrates them along the way, and what matters when they choose a car brand or a way to travel, using Hyundai as a case study for new mobility services. Anonymous (nickname only), about 10 minutes, available in English, Spanish, German, French and Korean. Anyone 19+ can take part, with or without a car; responses from North America, Europe and Latin America are especially welcome.\n\nLink: ${SURVEY}`,
   } },
 
-  { group: "④ 짧은 영상 (보조)" },
+  { group: "⑤ 짧은 영상 (보조)" },
   { id: "creator", title: "현지 크리에이터에게 보내는 DM", who: "자동차·도시·통근·한국문화 크리에이터", how: "팔로워 수천~수만 명 규모가 답장을 잘 합니다. <b>스토리 공유 한 번</b>만 부탁하세요. 10명에게 보내면 1~2명이 도와주는 정도가 보통입니다.", msgs: {
-    en: `Hi [name]! I really enjoy your videos about [topic] 🙌\nWe're university students in Korea doing academic research on how people choose between owning a car and other ways of getting around in different countries.\nWould you consider sharing our survey once in your story? It's anonymous, ~10 min, no ads or sales. We'd be happy to send you the results by country when we're done (Nov 30).\n${M("en")}\nThank you either way!`,
-    es: `¡Hola [nombre]! Me encantan tus videos sobre [tema] 🙌\nSomos estudiantes universitarios en Corea y hacemos una investigación académica sobre cómo la gente elige entre tener coche y otras formas de moverse en distintos países.\n¿Te animarías a compartir nuestra encuesta una vez en tu historia? Es anónima, dura ~10 min y no tiene publicidad. Con gusto te enviamos los resultados por país al terminar (30 de nov.).\n${M("es")}\n¡Gracias de todos modos!`,
-    pt: `Oi [nome]! Curto muito seus vídeos sobre [tema] 🙌\nSomos estudantes universitários na Coreia fazendo uma pesquisa acadêmica sobre como as pessoas escolhem entre ter carro e outras formas de se locomover em vários países.\nVocê toparia compartilhar nossa pesquisa uma vez no seu story? É anônima, leva ~10 min e não tem propaganda. Mandamos os resultados por país quando terminar (30/11).\n${M("pt")}\nObrigado de qualquer forma!`,
+    en: `Hi [name]! I really enjoy your videos about [topic] 🙌\nWe're university students in Korea doing academic research on how people get around day to day and how they choose between owning a car and other ways of getting around.\nWould you consider sharing our survey once in your story? It's anonymous, ~10 min, no ads or sales. We'd be happy to send you the results by country when we're done (Nov 30).\n${M("en")}\nThank you either way!`,
+    es: `¡Hola [nombre]! Me encantan tus videos sobre [tema] 🙌\nSomos estudiantes universitarios en Corea y hacemos una investigación académica sobre cómo se mueve la gente en su día a día y cómo elige entre tener coche y otras formas de moverse.\n¿Te animarías a compartir nuestra encuesta una vez en tu historia? Es anónima, dura ~10 min y no tiene publicidad. Con gusto te enviamos los resultados por país al terminar (30 de nov.).\n${M("es")}\n¡Gracias de todos modos!`,
+    de: `Hallo [Name]! Ich mag deine Videos über [Thema] sehr 🙌\nWir sind Studierende in Korea und forschen dazu, wie Menschen im Alltag unterwegs sind und wie sie zwischen eigenem Auto und anderen Verkehrsmitteln wählen.\nWürdest du unsere Umfrage einmal in deiner Story teilen? Sie ist anonym, dauert ca. 10 Min. und enthält keine Werbung. Gern schicken wir dir danach die Ergebnisse nach Ländern (30. Nov.).\n${M("de")}\nDanke so oder so!`,
+    pt: `Oi [nome]! Curto muito seus vídeos sobre [tema] 🙌\nSomos estudantes universitários na Coreia fazendo uma pesquisa acadêmica sobre como as pessoas se locomovem no dia a dia e como escolhem entre ter carro e outras formas de se locomover.\nVocê toparia compartilhar nossa pesquisa uma vez no seu story? É anônima, leva ~10 min e não tem propaganda. Mandamos os resultados por país quando terminar (30/11).\n${M("pt")}\nObrigado de qualquer forma!`,
   } },
   { id: "video", title: "짧은 영상 대본 3개 (15~25초)", who: "TikTok · 릴스 · 쇼츠 동시 업로드", how: "같은 영상에 <b>자막 언어만 바꿔</b> 나라별로 올리세요. 첫 1~2초에 질문을 크게 띄우고, 마지막에 ‘프로필 링크’를 말합니다. 캡션 끝에 해시태그를 붙이세요.", msgs: {
-    en: `[영상 1 · 질문형]\n0–2s (화면 큰 글씨): "Is owning a car still worth it in 2026?"\n2–8s: "In Korea we're asking people all over the world: car, public transport, taxi or car sharing?"\n8–15s: "Drop your country flag in the comments and tell us what you'd pick 👇"\n15–20s: "Our 10-min anonymous survey is in my bio. Let's see which country wins!"\n캡션: Car or no car? 🚗🚇 Tell us your country 👇 #carsoftiktok #commute #urbanism #studyresearch\n\n[영상 2 · 국가 대항전]\n0–2s: "Which country hates traffic the most? 🇺🇸🇧🇷🇪🇸🇫🇷🇮🇹🇲🇽"\n2–10s: 화면에 지금까지 나라별 응답 수(대시보드 캡처)를 보여 주며 "So far Spain is ahead…"\n10–18s: "Help your country catch up — link in bio, 10 minutes, anonymous."\n\n[영상 3 · 한국 학생 브이로그]\n0–2s: "Korean students need your help 🙏"\n2–12s: 캠퍼스·지하철 장면 + "We're researching how the world gets around for our class project."\n12–20s: "If you've got 10 minutes, the survey is in my bio. 감사합니다!"\n\n해시태그 예: #carsoftiktok #carTok #commute #publictransport #urbanism #EV #koreanstudent\n스페인어: #autos #movilidad #transportepúblico · 포르투갈어: #carros #mobilidade #transportepúblico · 프랑스어: #voiture #mobilité · 이탈리아어: #auto #mobilità`,
+    en: `[영상 1 · 질문형]\n0–2s (화면 큰 글씨): "Is owning a car still worth it in 2026?"\n2–8s: "In Korea we're asking people all over the world: car, public transport, taxi or car sharing — and what annoys you most?"\n8–15s: "Drop your country flag in the comments and tell us what you'd pick 👇"\n15–20s: "Our 10-min anonymous survey is in my bio. Let's see which country wins!"\n캡션: Car or no car? 🚗🚇 Tell us your country 👇 #carsoftiktok #commute #urbanism #studyresearch\n\n[영상 2 · 국가 대항전]\n0–2s: "Which country hates traffic the most? 🇺🇸🇧🇷🇪🇸🇫🇷🇩🇪🇲🇽"\n2–10s: 화면에 지금까지 나라별 응답 수(대시보드 캡처)를 보여 주며 "So far Spain is ahead…"\n10–18s: "Help your country catch up — link in bio, 10 minutes, anonymous."\n\n[영상 3 · 한국 학생 브이로그]\n0–2s: "Korean students need your help 🙏"\n2–12s: 캠퍼스·지하철 장면 + "We're researching how people get around every day for our class project."\n12–20s: "If you've got 10 minutes, the survey is in my bio. 감사합니다!"\n\n해시태그 예: #carsoftiktok #carTok #commute #publictransport #urbanism #EV #koreanstudent\n스페인어: #autos #movilidad #transportepúblico · 독일어: #auto #mobilität #pendeln · 포르투갈어: #carros #mobilidade #transportepúblico · 프랑스어: #voiture #mobilité · 이탈리아어: #auto #mobilità`,
   } },
 ];
 
