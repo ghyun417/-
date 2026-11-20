@@ -20,9 +20,13 @@
     H: "H · 특별히 불편 없었음", I: "I · 겪지 않았음·모르겠음",
   };
 
+  // 국가 문항은 설문 버전 7부터 생겼습니다. 그 전 응답은 국가가 비어 있어 따로 묶습니다.
+  const COUNTRIES = ["대한민국", "북아메리카(미국·캐나다)", "유럽", "라틴아메리카(멕시코·중남미)", "기타"];
+  const NO_COUNTRY = "이전 버전 응답 (국가 문항 없음)";
+
   const SIMPLE = {
     submitted_at: "제출 시각",
-    age: "연령대", region: "생활 지역", driving: "운전",
+    age: "연령대", country: "국가", region: "생활 지역", driving: "운전",
     q1_purpose: "Q1. 자주 한 이동 · 목적", q1_frequency: "Q1. 자주 한 이동 · 횟수", q1_distance: "Q1. 자주 한 이동 · 편도 거리",
     q1_people: "Q1. 자주 한 이동 · 함께 간 사람", q1_luggage: "Q1. 자주 한 이동 · 짐",
     q2: "Q2. 주로 이용한 방법", q2_other: "Q2. 기타 방법 (직접 입력)",
@@ -36,6 +40,7 @@
 
   const ORDER = {
     "연령대": ["만 19~29세", "30대", "40대", "50대", "60대 이상", "응답 안 함"],
+    "국가": [...COUNTRIES, NO_COUNTRY],
     "생활 지역": ["대도시 중심", "대도시 외곽", "중소도시", "읍·면·농어촌"],
     "운전": ["직접 운전함", "면허는 있지만 거의 안 함", "면허 없음"],
     "Q1. 자주 한 이동 · 횟수": ["주 1일 미만", "주 1~2일", "주 3~4일", "주 5일 이상"],
@@ -78,6 +83,7 @@
     detect: (headers) => headers.includes("submission_id") && headers.some((h) => /^q10_\d+_\d$/.test(h)),
     transform(headers, rows, opts) {
       const nick = headers.indexOf("nickname");
+      const ver = headers.indexOf("survey_version"), ctry = headers.indexOf("country");
       let excluded = 0;
       if (opts && opts.excludeTest && nick >= 0) {
         rows = rows.filter((r) => { const t = opts.excludeTest.test((r[nick] || "").trim()); if (t) excluded++; return !t; });
@@ -93,7 +99,11 @@
       });
       return {
         headers: keep.map((k) => k[1]),
-        rows: rows.map((r) => keep.map(([i, , fn]) => { const v = cleanNum(String(r[i] ?? "").trim()); return v ? fn(v) : ""; })),
+        rows: rows.map((r) => keep.map(([i, , fn]) => {
+          const v = cleanNum(String(r[i] ?? "").trim());
+          if (i === ctry && !v && ver >= 0 && Number(r[ver]) < 7) return NO_COUNTRY;
+          return v ? fn(v) : "";
+        })),
         excluded,
         hints: {
           multi: new Set(["Q1. 자주 한 이동 · 함께 간 사람", "Q1. 자주 한 이동 · 짐", "Q18. Q17처럼 답한 이유 (최대 2개)"]),
@@ -124,6 +134,7 @@
             skip: "I",
           },
           ageColumn: "연령대",
+          countryColumn: "국가",
           // 화면을 설문 순서대로 묶는 단위. match = 카드 제목이 이 규칙에 맞으면 그 묶음으로 갑니다.
           sections: [
             { id: "who", icon: "users", color: "sky", title: "누가 응답했나요", desc: "응답자가 사는 곳과 운전 여부입니다.", match: "^(생활 지역|운전)$" },

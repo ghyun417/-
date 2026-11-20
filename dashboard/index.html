@@ -824,23 +824,41 @@ function render() {
     top.push(card("교차 분석", N, body, { wide: true, noChip: true, take: `<b>${esc(A.name)}</b>에 따라 <b>${esc(B.name)}</b> 응답이 어떻게 달라지는지 봅니다.` }));
   }
 
-  // ---- 연령대 (맨 위)
-  const ageCol = cls.singles.find((c) => c.name === (hints.ageColumn || "")) || cls.singles.find((c) => /연령|나이|^age$/i.test(c.name));
-  let ageCard = "";
-  if (ageCol) {
-    const counts = new Map(countValues(ageCol.vals).items.map((x) => [x.k, x.c]));
-    const groups = (ORD[ageCol.name] || [...counts.keys()]).filter((k) => counts.has(k) || !/응답 안 함|무응답/.test(k));
+  // ---- 연령대·국가 (맨 위)
+  // 도넛 + 범례 카드. skip에 맞는 값(무응답, 이전 버전 등)은 회색으로 두고 '가장 많다/적다' 계산에서 뺍니다.
+  function donutCard(col, { title, ic, cls, label, skip, help, unitWord, insightLead }) {
+    const counts = new Map(countValues(col.vals).items.map((x) => [x.k, x.c]));
+    const groups = (ORD[col.name] || [...counts.keys()]).filter((k) => counts.has(k) || !skip.test(k)).concat([...counts.keys()].filter((k) => !(ORD[col.name] || []).includes(k) && ORD[col.name]));
     const total = [...counts.values()].reduce((a, b) => a + b, 0);
-    const real = groups.filter((k) => !/응답 안 함|무응답/.test(k)).map((k) => ({ k, c: counts.get(k) || 0 }));
-    const most = real.slice().sort((a, b) => b.c - a.c)[0], least = real.slice().sort((a, b) => a.c - b.c)[0];
-    const parts = groups.map((k, i) => ({ k, c: counts.get(k) || 0, color: /응답 안 함|무응답/.test(k) ? "var(--line)" : PASTEL[i % PASTEL.length] }));
+    const real = groups.filter((k) => !skip.test(k)).map((k) => ({ k, c: counts.get(k) || 0 }));
+    const realTotal = real.reduce((a, x) => a + x.c, 0);
+    const seen = real.filter((x) => x.c > 0), empty = real.filter((x) => !x.c);
+    const most = seen.slice().sort((a, b) => b.c - a.c)[0], least = seen.slice().sort((a, b) => a.c - b.c)[0];
+    // 괄호 설명이 붙은 이름은 괄호 앞 글자로 조사를 고릅니다. 예: 라틴아메리카(멕시코·중남미)가
+    const J = (k, withB, without) => josa(String(k).replace(/\s*\([^)]*\)$/, ""), withB, without);
+    const parts = groups.map((k, i) => ({ k, c: counts.get(k) || 0, color: skip.test(k) ? "var(--line)" : PASTEL[i % PASTEL.length] }));
     const legend = `<ul class="legend-list">${parts.map((p) => `<li class="${most && p.k === most.k ? "most" : ""}"><i style="background:${p.color}"></i><span>${esc(p.k)}</span><span class="cnt">${p.c}명</span><span class="shr">${pct(p.c, total)}%</span></li>`).join("")}</ul>`;
-    const headline = most && least && most.k !== least.k
-      ? `<b>${esc(most.k)}</b>${josa(most.k, "이", "가")} 가장 많고(${pct(most.c, total)}%), <b>${esc(least.k)}</b>${josa(least.k, "이", "가")} 가장 적어요(${least.c}명).`
-      : "";
-    if (headline) insights.unshift(`응답자는 ${headline}`);
-    ageCard = `<section class="card agecard c-mauve"><header><h2>${icon("pie")}연령대별 응답자</h2><span class="n">총 <span class="num">${total}</span>명</span></header>${headline ? `<p class="takeaway">${headline}</p>` : ""}<div class="donut-wrap">${donutSVG(parts, total, "연령대별 응답자 비율")}${legend}</div><p class="help"><b>읽는 법</b> · 도넛 조각이 클수록 그 연령대 응답자가 많아요. 회색 띠로 표시한 줄이 가장 많은 연령대예요.</p></section>`;
+    const skipped = total - realTotal;
+    const base = skipped ? ` (답한 ${realTotal}명 기준)` : "";
+    let headline = most && least && most.k !== least.k
+      ? `<b>${esc(most.k)}</b>${J(most.k, "이", "가")} 가장 많고(${pct(most.c, realTotal)}%), <b>${esc(least.k)}</b>${J(least.k, "이", "가")} 가장 적어요(${least.c}명)${base}.`
+      : most ? `<b>${esc(most.k)}</b>${J(most.k, "이", "가")} 가장 많아요(${pct(most.c, realTotal)}%)${base}.` : "";
+    if (headline && empty.length && empty.length < real.length) headline += ` 아직 응답이 없는 곳: ${empty.map((x) => esc(x.k)).join(", ")}.`;
+    if (headline) insights.unshift(`${insightLead} ${headline}`);
+    return `<section class="card ${cls}"><header><h2>${icon(ic)}${title}</h2><span class="n">총 <span class="num">${total}</span>명</span></header>${headline ? `<p class="takeaway">${headline}</p>` : ""}<div class="donut-wrap">${donutSVG(parts, total, label)}${legend}</div><p class="help"><b>읽는 법</b> · ${help}</p></section>`;
   }
+  const ageCol = cls.singles.find((c) => c.name === (hints.ageColumn || "")) || cls.singles.find((c) => /연령|나이|^age$/i.test(c.name));
+  const countryCol = cls.singles.find((c) => c.name === (hints.countryColumn || "")) || cls.singles.find((c) => /^(국가|country)$/i.test(c.name));
+  const countryCard = countryCol ? donutCard(countryCol, {
+    title: "국가별 응답자", ic: "map", cls: "wide countrycard c-sky", label: "국가별 응답자 비율", skip: /이전 버전|응답 안 함|무응답/,
+    insightLead: "나라별로는",
+    help: "도넛 조각이 클수록 그 나라(지역) 응답자가 많아요. 국가 문항은 설문 수정본(버전 7)부터 생겨서, 그 전에 들어온 응답은 회색 ‘이전 버전 응답’으로 따로 묶었어요. 맨 아래 ‘응답자 거르기’에서 국가를 고르면 모든 결과를 그 나라 응답자만으로 볼 수 있어요.",
+  }) : "";
+  const ageCard = ageCol ? donutCard(ageCol, {
+    title: "연령대별 응답자", ic: "pie", cls: "agecard c-mauve", label: "연령대별 응답자 비율", skip: /응답 안 함|무응답/,
+    insightLead: "응답자는",
+    help: "도넛 조각이 클수록 그 연령대 응답자가 많아요. 회색 띠로 표시한 줄이 가장 많은 연령대예요.",
+  }) : "";
 
   const insColors = ["var(--mauve)", "var(--coral)", "var(--amber)", "var(--sage)", "var(--sky)"];
   const insightBody = `<ul class="insights">${insights.slice(0, 8).map((s, i) => `<li style="--ins:${insColors[i % insColors.length]}">${s}</li>`).join("")}</ul><p class="muted small" style="margin:0">새 응답이 들어올 때마다 다시 계산됩니다. 점수 평균에는 ‘판단하기 어려움(?)’ 답을 넣지 않았습니다.</p>`;
@@ -852,7 +870,7 @@ function render() {
   canvasCards.sort((a, b) => a.order - b.order);
   const items = [...canvasCards, ...qcards].sort((a, b) => a.order - b.order)
     .map((x) => ({ ...x, title: (x.html.match(/<h[23]>(.*?)<\/h[23]>/) || [])[1] || "" }))
-    .filter((x) => !(ageCol && x.title === esc(ageCol.name)));
+    .filter((x) => !(ageCol && x.title === esc(ageCol.name)) && !(countryCol && x.title === esc(countryCol.name)));
   const secs = (hints.sections || []).map((sec) => ({ ...sec, re: new RegExp(sec.match), items: [] }));
   const etc = { id: "etc", title: "그 밖의 문항", desc: "", icon: "compare", color: "sky", items: [] };
   for (const it of items) (secs.find((sec) => sec.re.test(it.title)) || etc).items.push(it);
@@ -876,7 +894,7 @@ function render() {
     (D.error ? `<div class="banner err">${esc(D.error)} 마지막으로 받은 데이터를 보여 주고 있습니다.</div>` : "");
   $("#banner").innerHTML = banner;
   app.innerHTML = `<div style="display:flex;flex-direction:column;gap:16px">
-    <div class="bento-wrap"><div class="bento">${heroTile}${ageCard}${minis}</div>${insightCard}</div>
+    <div class="bento-wrap"><div class="bento">${heroTile}${ageCard}${minis}</div>${countryCard}${insightCard}</div>
     ${nav}${filters}${secHTML}${D.demo ? setupHTML() : ""}</div>`;
   bindApp();
   if (D.demo) bindSetup();
