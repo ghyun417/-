@@ -178,12 +178,9 @@ svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{
 <circle cx="900" cy="180" r="260" fill="url(#glow)" opacity="0.6"/>
 {''.join(sparkle(x, y, s, o) for x, y, s, o in [(170, 400, 34, 1), (930, 430, 26, 0.95), (120, 980, 22, 0.9), (960, 1010, 30, 1), (820, 330, 16, 0.8), (260, 300, 14, 0.7)])}
 {''.join(plus(x, y, s) for x, y, s in [(110, 540, 30), (165, 590, 22), (965, 600, 28), (915, 650, 20), (240, 1080, 22)])}
-{clipboard(560, 640)}
-{magnifier(330, 470, -38, 0.95)}
-{pie3d(210, 800, 92, [(0, 140, 'pBlue', '#1d58bf', 0), (140, 235, 'pRed', '#bd2a38', 6), (235, 300, 'pYellow', '#d29a10', 0), (300, 360, 'pGreen', '#1c8a52', 0)])}
-{donut3d(870, 820, 98, 46, 'pYellow', 'pRed', '#d29a10', '#bd2a38')}
-{pin(860, 540, 0.8)}
-{car(560, 930, 0.92)}
+{magnifier(300, 560, -38, 1.0)}
+{pin(830, 560, 0.95)}
+{car(540, 860, 1.25)}
 </svg>"""
 
 html = f"""<!doctype html><html><head><meta charset="utf-8"><title>배경</title>
