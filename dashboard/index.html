@@ -850,12 +850,12 @@ function render() {
   const ageCol = cls.singles.find((c) => c.name === (hints.ageColumn || "")) || cls.singles.find((c) => /연령|나이|^age$/i.test(c.name));
   const countryCol = cls.singles.find((c) => c.name === (hints.countryColumn || "")) || cls.singles.find((c) => /^(국가|country)$/i.test(c.name));
   const countryCard = countryCol ? donutCard(countryCol, {
-    title: "국가별 응답자", ic: "map", cls: "wide countrycard c-sky", label: "국가별 응답자 비율", skip: /이전 버전|응답 안 함|무응답/,
+    title: "국가별 응답자", ic: "map", cls: "wide countrycard c-sky", label: "국가별 응답자 비율", skip: /이전 버전|응답 안 함|해당 없음|무응답/,
     insightLead: "나라별로는",
     help: "도넛 조각이 클수록 그 나라(지역) 응답자가 많아요. 국가 문항은 설문 수정본(버전 7)부터 생겨서, 그 전에 들어온 응답은 회색 ‘이전 버전 응답’으로 따로 묶었어요. 맨 아래 ‘응답자 거르기’에서 국가를 고르면 모든 결과를 그 나라 응답자만으로 볼 수 있어요.",
   }) : "";
   const ageCard = ageCol ? donutCard(ageCol, {
-    title: "연령대별 응답자", ic: "pie", cls: "agecard c-mauve", label: "연령대별 응답자 비율", skip: /응답 안 함|무응답/,
+    title: "연령대별 응답자", ic: "pie", cls: "agecard c-mauve", label: "연령대별 응답자 비율", skip: /응답 안 함|해당 없음|무응답/,
     insightLead: "응답자는",
     help: "도넛 조각이 클수록 그 연령대 응답자가 많아요. 회색 띠로 표시한 줄이 가장 많은 연령대예요.",
   }) : "";

@@ -40,9 +40,9 @@
   const DROP = new Set(["submission_id", "survey_version", "consent", "nickname"]);
 
   const ORDER = {
-    "연령대": ["만 19~29세", "30대", "40대", "50대", "60대 이상", "응답 안 함"],
+    "연령대": ["만 19~29세", "30대", "40대", "50대", "60대 이상", "해당 없음", "응답 안 함"],
     "국가": [...COUNTRIES, NO_COUNTRY],
-    "생활 지역": ["대도시 중심", "대도시 외곽", "중소도시", "읍·면·농어촌"],
+    "생활 지역": ["대도시", "중소도시", "농어촌"],
     "운전": ["직접 운전함", "면허는 있지만 거의 안 함", "면허 없음"],
     "Q1. 자주 한 이동 · 횟수": ["주 1일 미만", "주 1~2일", "주 3~4일", "주 5일 이상"],
     "Q1. 자주 한 이동 · 편도 거리": ["5km 미만", "5~15km", "15~30km", "30km 이상"],
@@ -78,6 +78,8 @@
     if (!/^\s*\[/.test(v)) return v;
     try { const a = JSON.parse(v); return Array.isArray(a) ? a.join(", ") : v; } catch (e) { return v; }
   };
+  const OLD_REGION = { "대도시 중심": "대도시", "대도시 외곽": "대도시", "읍·면·농어촌": "농어촌" };
+  const fixRegion = (v) => OLD_REGION[v] || v;
   const fixQ6 = (v) => (v === "?" ? "모르겠음" : STAGES[+v - 1] ? `${+v}. ${STAGES[+v - 1]}` : v);
 
   window.SURVEY_SCHEMA = {
@@ -95,6 +97,7 @@
         if (!m) return;
         let fn = m[1] || ((v) => v);
         if (h === "q6") fn = fixQ6;
+        if (h === "region") fn = fixRegion;
         if (["q1_people", "q1_luggage", "q18"].includes(h)) fn = jsonList;
         keep.push([i, m[0], fn]);
       });
