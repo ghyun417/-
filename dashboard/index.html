@@ -274,8 +274,8 @@ body.present .present-nav { display: flex; justify-content: space-between; align
 </div>
 <div id="toast" class="toast" hidden></div>
 
-<script src="config.js?v=20261120"></script>
-<script src="schema.js?v=20261120"></script>
+<script src="config.js?v=20261122"></script>
+<script src="schema.js?v=20261122"></script>
 <script>
 "use strict";
 /* ------------------------------------------------------------------
@@ -709,8 +709,8 @@ function render() {
     const hot = cells.filter((x) => x.c > 0).sort((a, b) => b.p - a.p).slice(0, 3);
     const isHot = (si, li) => hot.some((h) => h.si === si && h.li === li);
     const stageHead = stages.map((s) => `<th><span>${esc(s.label.replace(/^\d+\.\s*/, ""))}</span><small>${esc(s.theory)}</small></th>`).join("");
-    const bodyRows = UM.levers.map((lv, li) => `<tr><td><b>${esc(lv.name)}</b><small>${esc(lv.desc)}</small></td>${stages.map((s, si) => { const c = s.levers[li], p = s.n ? c / s.n : 0; return `<td class="ucell${isHot(si, li) ? " hot" : ""}" style="${c ? `background: color-mix(in srgb, var(--coral-deep) ${Math.round(8 + (p / maxP) * 70)}%, var(--surface)); color:${p / maxP > 0.55 ? "#fff" : "var(--ink)"}` : ""}" title="${c}명 / ${s.n}명">${c ? `${isHot(si, li) ? "✕ " : ""}${Math.round(p * 100)}%` : ""}</td>`; }).join("")}</tr>`).join("");
-    const noneRow = `<tr class="nonerow"><td><b>불편 없음</b><small>H · 겪었지만 괜찮았음</small></td>${stages.map((s) => { const p = s.n ? s.none / s.n : 0; return `<td class="ucell ok" style="background: color-mix(in srgb, var(--sage) ${Math.round(8 + p * 60)}%, var(--surface))" title="${s.none}명 / ${s.n}명">${s.n ? `${p >= 0.5 ? "○ " : ""}${Math.round(p * 100)}%` : ""}</td>`; }).join("")}</tr>`;
+    const bodyRows = UM.levers.map((lv, li) => `<tr><td><b>${esc(lv.name)}</b><small>${[].concat(lv.desc).map(esc).join("<br>")}</small></td>${stages.map((s, si) => { const c = s.levers[li], p = s.n ? c / s.n : 0; return `<td class="ucell${isHot(si, li) ? " hot" : ""}" style="${c ? `background: color-mix(in srgb, var(--coral-deep) ${Math.round(8 + (p / maxP) * 70)}%, var(--surface)); color:${p / maxP > 0.55 ? "#fff" : "var(--ink)"}` : ""}" title="${c}명 / ${s.n}명">${c ? `${isHot(si, li) ? "✕ " : ""}${Math.round(p * 100)}%` : ""}</td>`; }).join("")}</tr>`).join("");
+    const noneRow = `<tr class="nonerow"><td><b>불편 없음</b><small>${esc(UM.noneDesc || "")}</small></td>${stages.map((s) => { const p = s.n ? s.none / s.n : 0; return `<td class="ucell ok" style="background: color-mix(in srgb, var(--sage) ${Math.round(8 + p * 60)}%, var(--surface))" title="${s.none}명 / ${s.n}명">${s.n ? `${p >= 0.5 ? "○ " : ""}${Math.round(p * 100)}%` : ""}</td>`; }).join("")}</tr>`;
     const table = `<div class="tblwrap"><table class="umap"><thead><tr><th>효용 레버 \\ 구매자 경험 단계</th>${stageHead}</tr></thead><tbody>${bodyRows}${noneRow}</tbody><tfoot><tr><td class="muted small">그 단계를 겪은 사람</td>${stages.map((s) => `<td class="num muted small">${s.n}명</td>`).join("")}</tr></tfoot></table></div>`;
     const lines = [];
     if (hot.length) lines.push(`구매자 효용을 가장 크게 가로막는 칸(✕)은 ${hot.map((h) => `<b>${esc(stages[h.si].label.replace(/^\d+\.\s*/, ""))}</b> 단계의 <b>${esc(UM.levers[h.li].name)}</b>(${Math.round(h.p * 100)}%)`).join(", ")}입니다.`);
