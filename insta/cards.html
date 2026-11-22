@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>설문 카드뉴스</title>
+<style>
+/* 1080×1350 인스타그램 세로형 카드 4장. 하늘색→흰색 그라데이션, 굵은 제목(검정+파랑), 가운데 3D풍 일러스트, 아래 흰 패널. */
+@font-face { font-family: "BHS"; src: url(fonts/black-han-sans-korean-400-normal.woff2) format("woff2"); unicode-range: U+1100-11FF, U+3000-303F, U+3130-318F, U+AC00-D7AF; }
+@font-face { font-family: "BHS"; src: url(fonts/black-han-sans-latin-400-normal.woff2) format("woff2"); unicode-range: U+0000-024F, U+2000-206F, U+2190-21FF; }
+@font-face { font-family: "NSK"; font-weight: 500; src: url(fonts/noto-sans-kr-korean-500-normal.woff2) format("woff2"); unicode-range: U+1100-11FF, U+3000-303F, U+3130-318F, U+AC00-D7AF; }
+@font-face { font-family: "NSK"; font-weight: 500; src: url(fonts/noto-sans-kr-latin-500-normal.woff2) format("woff2"); unicode-range: U+0000-024F, U+2000-206F, U+2190-21FF; }
+@font-face { font-family: "NSK"; font-weight: 700; src: url(fonts/noto-sans-kr-korean-700-normal.woff2) format("woff2"); unicode-range: U+1100-11FF, U+3000-303F, U+3130-318F, U+AC00-D7AF; }
+@font-face { font-family: "NSK"; font-weight: 700; src: url(fonts/noto-sans-kr-latin-700-normal.woff2) format("woff2"); unicode-range: U+0000-024F, U+2000-206F, U+2190-21FF; }
+@font-face { font-family: "NSK"; font-weight: 900; src: url(fonts/noto-sans-kr-korean-900-normal.woff2) format("woff2"); unicode-range: U+1100-11FF, U+3000-303F, U+3130-318F, U+AC00-D7AF; }
+@font-face { font-family: "NSK"; font-weight: 900; src: url(fonts/noto-sans-kr-latin-900-normal.woff2) format("woff2"); unicode-range: U+0000-024F, U+2000-206F, U+2190-21FF; }
+:root {
+  --ink: #111827; --blue: #1667e0; --blue-soft: #d9ecff; --sky: #bfe1ff; --muted: #5b6676; --white: #ffffff;
+  --display: "BHS", "NSK", sans-serif; --body: "NSK", sans-serif;
+}
+* { box-sizing: border-box; margin: 0; }
+body { background: #8a96a6; font-family: var(--body); color: var(--ink); display: flex; flex-direction: column; gap: 40px; padding: 40px; align-items: center; }
+.card { width: 1080px; height: 1350px; position: relative; overflow: hidden;
+  background:
+    radial-gradient(600px 420px at 85% 12%, rgba(255,255,255,0.75), transparent 70%),
+    radial-gradient(700px 500px at 10% 55%, rgba(170,214,255,0.55), transparent 70%),
+    linear-gradient(180deg, #bfe1ff 0%, #dcefff 42%, #f4faff 72%, #ffffff 100%);
+  display: flex; flex-direction: column; align-items: center; }
+.tag { margin-top: 92px; background: var(--ink); color: #fff; font-weight: 700; font-size: 34px; padding: 12px 26px; letter-spacing: -0.01em; }
+.h1 { font-family: var(--display); text-align: center; line-height: 1.12; letter-spacing: -0.02em; margin-top: 34px; }
+.h1 .k { color: var(--ink); display: block; }
+.h1 .b { color: var(--blue); display: block; }
+.sub { font-weight: 700; font-size: 40px; color: #2a3443; margin-top: 22px; letter-spacing: -0.02em; }
+.spark { position: absolute; }
+.badge { position: absolute; width: 230px; height: 230px; display: grid; place-items: center; }
+.badge svg { position: absolute; inset: 0; }
+.badge span { position: relative; color: #fff; text-align: center; font-weight: 900; line-height: 1.1; }
+.badge small { display: block; font-size: 30px; font-weight: 700; }
+.badge b { font-size: 54px; font-family: var(--display); font-weight: 400; }
+.panel { position: absolute; left: 0; right: 0; bottom: 0; background: #fff; border-radius: 56px 56px 0 0; padding: 46px 60px 54px; display: flex; flex-direction: column; align-items: center; gap: 8px; box-shadow: 0 -12px 40px rgba(30, 90, 160, 0.10); }
+.panel .lab { color: var(--blue); font-weight: 700; font-size: 36px; }
+.panel .dates { font-family: var(--display); font-size: 104px; letter-spacing: -0.03em; line-height: 1.1; }
+.panel .team { font-weight: 700; font-size: 30px; color: var(--muted); margin-top: 8px; }
+.title2 { font-family: var(--display); font-size: 92px; line-height: 1.15; text-align: center; letter-spacing: -0.02em; margin-top: 30px; }
+.title2 .b { color: var(--blue); }
+.list { display: flex; flex-direction: column; gap: 26px; width: 900px; margin-top: 56px; }
+.row { background: #fff; border-radius: 36px; padding: 30px 36px; display: flex; align-items: center; gap: 30px; box-shadow: 0 12px 30px rgba(30, 90, 160, 0.12); }
+.row .ic { width: 150px; height: 110px; flex: none; display: grid; place-items: center; }
+.row .tx { font-weight: 900; font-size: 46px; letter-spacing: -0.02em; line-height: 1.25; }
+.row .tx small { display: block; font-weight: 500; font-size: 30px; color: var(--muted); margin-top: 4px; letter-spacing: -0.01em; }
+.num { width: 92px; height: 92px; border-radius: 50%; background: var(--blue); color: #fff; font-family: var(--display); font-size: 52px; display: grid; place-items: center; flex: none; }
+.bubble { position: relative; margin-top: 54px; background: #fff; border: 4px solid var(--blue); border-radius: 40px; padding: 30px 44px; font-weight: 700; font-size: 40px; text-align: center; letter-spacing: -0.02em; line-height: 1.4; max-width: 900px; }
+.bubble b { color: var(--blue); }
+.bubble::after { content: ""; position: absolute; left: 90px; bottom: -34px; width: 44px; height: 44px; background: #fff; border-right: 4px solid var(--blue); border-bottom: 4px solid var(--blue); transform: rotate(45deg) skew(8deg, 8deg); }
+.info { width: 900px; background: #fff; border-radius: 40px; padding: 18px 40px; margin-top: 50px; box-shadow: 0 12px 30px rgba(30, 90, 160, 0.12); }
+.info .it { display: grid; grid-template-columns: 210px 1fr; align-items: center; padding: 24px 0; border-bottom: 2px solid #e6eef8; font-size: 40px; }
+.info .it:last-child { border-bottom: 0; }
+.info .it span { color: var(--blue); font-weight: 900; }
+.info .it b { font-weight: 700; letter-spacing: -0.02em; }
+.cta { margin-top: 54px; background: var(--ink); color: #fff; border-radius: 999px; padding: 30px 62px; font-weight: 900; font-size: 48px; letter-spacing: -0.02em; display: flex; align-items: center; gap: 18px; }
+.cta svg { width: 46px; height: 46px; }
+.foot { margin-top: 30px; font-weight: 700; font-size: 34px; color: #2a3443; }
+.foot b { color: var(--blue); }
+.event { width: 920px; margin-top: 44px; background: #fff; border: 5px solid var(--blue); border-radius: 44px; padding: 54px 44px 28px; position: relative; box-shadow: 0 14px 34px rgba(30, 90, 160, 0.14); display: flex; flex-direction: column; gap: 6px; }
+.ev-lab { position: absolute; top: -32px; left: 50%; transform: translateX(-50%); background: var(--blue); color: #fff; font-weight: 900; font-size: 36px; padding: 8px 34px; border-radius: 999px; white-space: nowrap; }
+.step { display: flex; align-items: center; gap: 24px; padding: 14px 0; border-bottom: 2px dashed #d6e6f7; }
+.step:last-child { border-bottom: 0; }
+.step .num { width: 66px; height: 66px; font-size: 38px; }
+.step p { font-weight: 700; font-size: 39px; letter-spacing: -0.03em; line-height: 1.3; }
+.step p b { font-weight: 900; color: var(--blue); }
+.page { position: absolute; top: 40px; right: 48px; font-weight: 700; font-size: 28px; color: rgba(17,24,39,0.45); }
+</style>
+</head>
+<body>
+<!-- 공용 그림: 3D풍 자동차·버스·지도 핀·물음표 말풍선 -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7cc4ff"/><stop offset="0.45" stop-color="#3d8ef0"/><stop offset="1" stop-color="#1f5fc4"/></linearGradient>
+    <linearGradient id="bodyShade" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000" stop-opacity="0.18"/><stop offset="0.25" stop-color="#000" stop-opacity="0"/><stop offset="0.8" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.2"/></linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4fbff"/><stop offset="0.55" stop-color="#b8def7"/><stop offset="1" stop-color="#7fb7e0"/></linearGradient>
+    <radialGradient id="tire" cx="0.4" cy="0.35" r="0.7"><stop offset="0" stop-color="#4a5361"/><stop offset="0.7" stop-color="#1f242c"/><stop offset="1" stop-color="#0d1014"/></radialGradient>
+    <radialGradient id="rim" cx="0.38" cy="0.32" r="0.75"><stop offset="0" stop-color="#ffffff"/><stop offset="0.55" stop-color="#cdd7e2"/><stop offset="1" stop-color="#8f9caa"/></radialGradient>
+    <radialGradient id="shadow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#1b4f8f" stop-opacity="0.35"/><stop offset="1" stop-color="#1b4f8f" stop-opacity="0"/></radialGradient>
+    <linearGradient id="busBody" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd56b"/><stop offset="0.5" stop-color="#ffb627"/><stop offset="1" stop-color="#e08a00"/></linearGradient>
+    <linearGradient id="pin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8a8a"/><stop offset="0.6" stop-color="#ff4d5e"/><stop offset="1" stop-color="#d42a3d"/></linearGradient>
+    <linearGradient id="bub" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d7e9fb"/></linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6"/></filter>
+
+    <symbol id="car" viewBox="0 0 640 340">
+      <ellipse cx="320" cy="300" rx="280" ry="26" fill="url(#shadow)"/>
+      <path d="M58 214 Q58 178 98 170 L176 158 Q222 98 300 92 L392 92 Q448 95 488 148 L548 160 Q590 170 592 212 L592 240 Q592 264 566 264 L84 264 Q58 264 58 240 Z" fill="url(#body)"/>
+      <path d="M58 214 Q58 178 98 170 L176 158 Q222 98 300 92 L392 92 Q448 95 488 148 L548 160 Q590 170 592 212 L592 240 Q592 264 566 264 L84 264 Q58 264 58 240 Z" fill="url(#bodyShade)"/>
+      <path d="M206 156 Q240 112 300 108 L342 108 L342 156 Z" fill="url(#glass)"/>
+      <path d="M358 108 L392 108 Q438 110 470 156 L358 156 Z" fill="url(#glass)"/>
+      <path d="M222 150 Q248 120 292 116" stroke="#fff" stroke-width="8" stroke-linecap="round" fill="none" opacity="0.8"/>
+      <path d="M96 182 Q300 160 560 176" stroke="#fff" stroke-width="10" stroke-linecap="round" fill="none" opacity="0.35"/>
+      <path d="M350 160 L350 252" stroke="#1a4f9e" stroke-width="3" opacity="0.5"/>
+      <rect x="300" y="182" width="34" height="9" rx="4.5" fill="#e8f3ff" opacity="0.9"/>
+      <rect x="402" y="182" width="34" height="9" rx="4.5" fill="#e8f3ff" opacity="0.9"/>
+      <rect x="560" y="184" width="28" height="18" rx="8" fill="#fff6c9"/>
+      <rect x="60" y="184" width="22" height="18" rx="7" fill="#ff6b6b"/>
+      <rect x="70" y="236" width="512" height="10" rx="5" fill="#174a92" opacity="0.35"/>
+      <g transform="translate(168 262)"><circle r="50" fill="url(#tire)"/><circle r="27" fill="url(#rim)"/><circle r="8" fill="#6d7a89"/></g>
+      <g transform="translate(476 262)"><circle r="50" fill="url(#tire)"/><circle r="27" fill="url(#rim)"/><circle r="8" fill="#6d7a89"/></g>
+    </symbol>
+
+    <symbol id="bus" viewBox="0 0 300 200">
+      <ellipse cx="150" cy="182" rx="130" ry="14" fill="url(#shadow)"/>
+      <rect x="22" y="20" width="256" height="140" rx="30" fill="url(#busBody)"/>
+      <rect x="40" y="40" width="64" height="52" rx="12" fill="url(#glass)"/><rect x="116" y="40" width="64" height="52" rx="12" fill="url(#glass)"/><rect x="192" y="40" width="68" height="52" rx="12" fill="url(#glass)"/>
+      <path d="M40 30 Q150 22 262 30" stroke="#fff" stroke-width="7" stroke-linecap="round" fill="none" opacity="0.55"/>
+      <rect x="22" y="112" width="256" height="12" fill="#c77700" opacity="0.35"/>
+      <g transform="translate(78 162)"><circle r="24" fill="url(#tire)"/><circle r="12" fill="url(#rim)"/></g>
+      <g transform="translate(222 162)"><circle r="24" fill="url(#tire)"/><circle r="12" fill="url(#rim)"/></g>
+    </symbol>
+
+    <symbol id="pinIcon" viewBox="0 0 120 160">
+      <ellipse cx="60" cy="150" rx="34" ry="8" fill="url(#shadow)"/>
+      <path d="M60 8 C28 8 8 32 8 60 C8 98 60 142 60 142 C60 142 112 98 112 60 C112 32 92 8 60 8 Z" fill="url(#pin)"/>
+      <circle cx="60" cy="58" r="20" fill="#fff"/>
+      <path d="M32 36 Q44 22 62 20" stroke="#fff" stroke-width="7" stroke-linecap="round" fill="none" opacity="0.6"/>
+    </symbol>
+
+    <symbol id="askIcon" viewBox="0 0 160 150">
+      <ellipse cx="80" cy="140" rx="56" ry="9" fill="url(#shadow)"/>
+      <path d="M22 18 H138 Q152 18 152 32 V92 Q152 106 138 106 H74 L44 130 L50 106 H22 Q8 106 8 92 V32 Q8 18 22 18 Z" fill="url(#bub)" stroke="#9cc8ef" stroke-width="3"/>
+      <text x="80" y="88" text-anchor="middle" font-family="BHS, sans-serif" font-size="70" fill="#1667e0">?</text>
+    </symbol>
+
+    <symbol id="burst" viewBox="0 0 200 200">
+      <polygon points="100,4 116,30 146,18 150,50 182,54 170,84 196,100 170,116 182,146 150,150 146,182 116,170 100,196 84,170 54,182 50,150 18,146 30,116 4,100 30,84 18,54 50,50 54,18 84,30" fill="#111827"/>
+    </symbol>
+    <symbol id="sparkle" viewBox="0 0 40 40"><path d="M20 0 L24 16 L40 20 L24 24 L20 40 L16 24 L0 20 L16 16 Z" fill="#fff"/></symbol>
+    <symbol id="arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<!-- 한 장짜리 게시물 -->
+<section class="card" id="c1">
+  <svg class="spark" style="left:80px;top:120px;width:44px;height:44px"><use href="#sparkle"/></svg>
+  <svg class="spark" style="right:90px;top:90px;width:34px;height:34px"><use href="#sparkle"/></svg>
+  <h1 class="h1" style="font-size:150px;margin-top:70px"><span class="k">자가용,</span><span class="b" style="font-size:118px">꼭 있어야 할까요?</span></h1>
+  <div class="event">
+    <span class="ev-lab">참여 이벤트</span>
+    <div class="step"><span class="num">1</span><p>설문 <b>닉네임 칸</b>에 <b>인스타 아이디</b> 입력</p></div>
+    <div class="step"><span class="num">2</span><p>이 게시물에 <b>“참여 완료”</b> 댓글 남기기</p></div>
+    <div class="step"><span class="num">3</span><p><b>11월 30일</b>, 추첨으로 <b>2명</b>께 <b>배민 상품권</b> 증정!</p></div>
+  </div>
+  <svg style="position:absolute;left:70px;top:820px;width:150px;height:200px"><use href="#pinIcon"/></svg>
+  <svg style="position:absolute;left:200px;top:790px;width:640px;height:340px"><use href="#car"/></svg>
+  <div class="badge" style="right:50px;top:790px;width:210px;height:210px;transform:rotate(-10deg)"><svg viewBox="0 0 200 200"><use href="#burst"/></svg><span><small>응답시간</small><b>약 10분</b></span></div>
+  <div class="panel" style="padding:36px 60px 44px;gap:4px">
+    <span class="lab">조사 기간</span>
+    <span class="dates" style="font-size:92px">11.16.월 – 11.30.월</span>
+    <span class="team" style="margin-top:2px">충남대학교 경영학부 글로벌 현장학습 연구팀 · <b style="color:#1667e0">프로필 링크에서 참여</b></span>
+  </div>
+</section>
+</body>
+</html>
