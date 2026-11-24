@@ -105,7 +105,8 @@
         headers: keep.map((k) => k[1]),
         rows: rows.map((r) => keep.map(([i, , fn]) => {
           const v = cleanNum(String(r[i] ?? "").trim());
-          if (i === ctry && !v && ver >= 0 && Number(r[ver]) < 7) return NO_COUNTRY;
+          // 국가 문항이 없던 버전(7 미만)은 모두 국내 지인 배포분이라 대한민국으로 셉니다.
+          if (i === ctry && !v && ver >= 0 && Number(r[ver]) < 7) return "대한민국";
           return v ? fn(v) : "";
         })),
         excluded,
